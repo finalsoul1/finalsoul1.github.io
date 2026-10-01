@@ -110,6 +110,7 @@ img { max-width:100%; }
 .resume-case-company { display:block; margin-bottom:6px; font-size:12px; color:#68665f; }
 .resume-case h3 { margin:0 0 10px; font-size:16px; line-height:1.5; word-break:keep-all; }
 .resume-case .resume-case-result { margin-top:10px; font-weight:700; }
+.resume-case .resume-case-note { margin-top:4px; font-size:12px; color:#68665f; }
 @media print { .resume-case { break-inside:avoid; } }
 #experience .resume-entry strong { font-size:16px; line-height:1.4; }
 .resume-subsection + .resume-subsection { margin-top:24px; }

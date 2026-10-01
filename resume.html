@@ -13,7 +13,7 @@
     <header class="site-header">
       <a class="brand" href="resume.html" aria-label="권병준 경력기술서 처음으로">
         <span class="brand-mark">FE</span>
-        <span>권병준 <small>FRONTEND ENGINEER</small></span>
+        <span>권병준 <small>FRONTEND DEVELOPER</small></span>
       </a>
       <div class="resume-actions">
         <a href="mailto:finalsoul1@gmail.com">이메일 <span aria-hidden="true">&nearr;</span></a>
@@ -23,11 +23,12 @@
 
     <main id="main" class="resume-shell">
       <nav class="resume-toc" aria-label="경력기술서 목차">
-        <span class="eyebrow">CONTENTS / 01-04</span>
+        <span class="eyebrow">CONTENTS / 01-05</span>
         <div>
           <a href="#intro">소개</a>
           <a href="#highlights">대표 문제 해결</a>
           <a href="#experience">경력</a>
+          <a href="#others">기타</a>
           <a href="#skills">기술</a>
         </div>
       </nav>
@@ -36,14 +37,15 @@
         <div class="resume-intro">
           <span class="eyebrow">CAREER RESUME / 2026</span>
           <h1>권병준<span>.</span></h1>
-          <p>프론트엔드 엔지니어</p>
-          <div class="resume-contact"><a href="mailto:finalsoul1@gmail.com">finalsoul1@gmail.com</a></div>
+          <p>프런트엔드 개발자</p>
+          <div class="resume-contact"><a href="mailto:finalsoul1@gmail.com">finalsoul1@gmail.com</a> <a href="https://www.linkedin.com/in/병준-권-487a731bb" target="_blank" rel="noopener">LinkedIn</a> <a href="https://github.com/finalsoul1" target="_blank" rel="noopener">GitHub</a></div>
         </div>
 
         <section class="resume-block" id="intro">
           <h2>소개</h2>
           <div class="resume-introduction">
-            <p>이해하기 쉽고 단순한 코드를 지향하는 프런트엔드 개발자.</p>
+            <p>8년차 프런트엔드 개발자. 대량의 데이터를 다루는 화면의 성능 개선, 여러 팀이 함께 만드는 기능의 API 계약과 연동 규격 정리, 개발 속도를 높이면서도 검증 범위를 지키는 체계 구축에 강점.</p>
+            <p>이해하기 쉽고 단순한 코드를 지향.</p>
             <p>사람의 의도를 바탕으로 스펙 작성부터 설계, 구현, 검증, 머지까지 자동화하는 개발 플랫폼 설계에 관심. AI에게 얼마나 맡길지보다, 사람이 언제 어디까지 개입해야 효과적인지 고민.</p>
           </div>
         </section>
@@ -59,15 +61,16 @@
             </article>
             <article class="resume-case">
               <span class="resume-case-company">메리츠증권</span>
-              <h3>앱과 웹의 배포 시차를 고려한 호환 설계</h3>
-              <p>앱과 웹의 배포 시차를 고려해 브릿지 오류 처리 책임, 미지원 기능의 fallback, 업데이트 안내 정책을 설계하고 앱팀과 조율. 회원등급 응답 유실에 타임아웃, 재시도, 복구 화면 적용.</p>
-              <p class="resume-case-result">등급을 임의로 판단하지 않고 실패 상태와 재요청 경로를 명시해 무한 로딩 해소</p>
+              <h3>앱 응답 유실로 멈춘 화면 복구</h3>
+              <p>앱 브릿지의 회원등급 응답이 오지 않으면 호가 화면이 무한 로딩에 머무는 문제. 응답 실패를 비회원으로 처리하면 정회원에게 잘못된 안내가 나갈 수 있어, 등급을 추측하지 않고 타임아웃, 재시도, 실패 안내와 재요청 경로 적용.</p>
+              <p class="resume-case-result">호가 화면 무한 로딩 해소. 확인되지 않은 등급으로 잘못된 안내가 나가는 경로 제거</p>
             </article>
             <article class="resume-case">
               <span class="resume-case-company">메리츠증권</span>
               <h3>검증 체계를 유지한 개발 속도 개선</h3>
-              <p>캐시 재사용 실패와 중복 산출물의 비용을 실측해 로컬 검사와 CI 검증의 역할, 캐시 범위 재설계. 복원되지 않는 캐시의 쓰기 비용과 런타임에서 사용하지 않는 산출물을 제거하고, 단위테스트를 MR 필수 검사로 연결.</p>
-              <p class="resume-case-result">커밋 시간 약 30초에서 8초로 단축. CI 빌드 잡 380초에서 254초로 약 33% 단축 (develop 배포 빌드 58건의 중앙값 비교)</p>
+              <p>커밋 검사, 캐시 저장과 복원, 빌드, 이미지 전송 비용을 나눠 실측. 전체 타입 검사는 CI로 옮기고 커밋 단계는 변경 범위 검사로 축소. 매번 새로 생성되는 CI 러너에서 복원되지 않는 Turbopack 캐시를 비활성화하고, Next.js standalone 런타임이 쓰지 않는 중복 산출물을 이미지에서 제외. 단위테스트 1,773건을 MR 필수 검사로 연결.</p>
+              <p class="resume-case-result">커밋 시간 약 30초에서 8초, CI 빌드 잡 380초에서 254초(약 33%), 컨테이너 이미지 260.7MB에서 175.7MB로 단축</p>
+              <p class="resume-case-note">CI 빌드 잡은 develop 배포 빌드 58건의 중앙값 비교, 이미지는 ECR 압축 기준</p>
             </article>
           </div>
         </section>
@@ -76,14 +79,14 @@
           <h2>경력</h2>
           <div>
             <div class="resume-entry">
-              <div><strong>메리츠증권</strong><span>2026.07.06 - 현재</span></div>
+              <div><strong>메리츠증권</strong><span>2026.07 - 현재</span></div>
               <div>
-                <h3>플랫폼개발팀 FE</h3>
-                <p class="resume-summary">빠르게 개발된 제품의 공통 코드와 인터페이스를 재설계하고, CI/CD와 개발 절차를 정비해 팀에 공유</p>
+                <h3>플랫폼개발팀 / 프런트엔드 개발자</h3>
+                <p class="resume-summary">초기 제품의 공통 코드와 인터페이스를 재설계하고, CI/CD와 개발 절차를 정비해 팀에 공유</p>
                 <div class="resume-subsection">
                   <h4>주식모으기 서비스 개발 및 팀 간 기술 조율</h4>
                   <ul>
-                    <li>PM, PD, BE, 퍼블리셔, WTS 개발팀이 참여한 주식모으기 개발의 요구사항과 팀 간 의존성 조율</li>
+                    <li>PM, PD, BE, 퍼블리셔, WTS(웹 트레이딩 시스템) 개발팀이 참여한 주식모으기 개발의 요구사항과 팀 간 의존성 조율</li>
                     <li>홈과 공유 기능 직접 구현. API 계약, 팀별 담당 범위, 앱 및 WTS 연동 규격을 정리해 여러 팀의 기능을 하나의 사용자 흐름으로 연결</li>
                   </ul>
                 </div>
@@ -91,8 +94,8 @@
                   <h4>공통 코드와 개발 및 운영 체계 개선</h4>
                   <ul>
                     <li>WTS와의 호환성을 유지하며 아이콘 생성기와 자동 변환 도구를 구현하고, 사용처 508건을 개별 컴포넌트 import로 전환</li>
+                    <li>앱과 웹의 배포 시차를 고려해 미지원 브릿지 기능의 fallback, 오류 처리 책임, 업데이트 안내 정책을 앱팀과 정리하고 이관 방안 문서화</li>
                     <li>배포 태그를 기준으로 main과 develop 반영 MR 생성 및 알림 자동화. 재태그와 중복 실행의 처리 규칙 수립</li>
-                    <li>wcs의 ECR 압축 이미지 크기 260.7MB에서 175.7MB로 약 33% 축소</li>
                     <li>부하 실측을 바탕으로 운영 서버 용량 산정. Grafana 대시보드와 Sentry 오류 발생 환경 정보 보강</li>
                     <li>AI 코드리뷰 도입. 저장소별 리뷰 지침과 적용 범위를 정하고 오탐 보정</li>
                   </ul>
@@ -100,9 +103,9 @@
               </div>
             </div>
             <div class="resume-entry">
-              <div><strong>Flex</strong><span>2022.07 - 2026.06.04</span></div>
+              <div><strong>Flex</strong><span>2022.07 - 2026.06</span></div>
               <div>
-                <h3>Performance Squad / FE Developer</h3>
+                <h3>성과관리(Performance) 스쿼드 / 프런트엔드 개발자</h3>
                 <p class="resume-summary">복잡한 성과관리 규칙을 사용자가 이해하기 쉽게 구현하고, 많은 데이터를 다루는 화면의 성능 개선에 집중</p>
                 <ul>
                     <li>목표, 평가, 원온원 등 성과관리 제품군의 프런트엔드 개발 및 운영. 전사, 팀, 개인의 목표 관계와 진척도 화면, 목표와 피드백 이력을 연결하는 원온원 대시보드, AI 분석 리포트 뷰어와 평가 폼 개선</li>
@@ -115,7 +118,7 @@
             <div class="resume-entry">
               <div><strong>디유닛 / 서울스토어</strong><span>2019.01 - 2022.06</span></div>
               <div>
-                <h3>FE Developer</h3>
+                <h3>프런트엔드 개발자</h3>
                 <p class="resume-summary">커머스 기능 개발로 프런트엔드 실무를 익히고, 레거시 전환과 FE 파트 리딩으로 역할 확대</p>
                 <ul>
                     <li>FE 파트를 리딩하며 Backbone.js와 jQuery 기반 레거시를 Next.js로 전환. AWS ELB 규칙으로 페이지별 전환 범위를 제어해 서비스 운영 중 점진적 마이그레이션</li>
@@ -125,15 +128,17 @@
                 </ul>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section class="resume-block" id="others">
+          <h2>기타</h2>
+          <div>
             <div class="resume-entry">
               <div><strong>샘플리어</strong><span>2020.09 - 2021.12</span></div>
               <div>
-                <h3>사이드 프로젝트 개발 참여</h3>
-                <p class="resume-summary">디유닛 재직 중 사이드 프로젝트 개발 참여</p>
-                <ul>
-                    <li>Normalizr와 Reselect를 활용한 복잡한 API 응답 및 파생 데이터 정리</li>
-                    <li>Redux 및 Immutable.js 기반 상태 관리 로직 리팩터링</li>
-                </ul>
+                <h3>사이드 프로젝트</h3>
+                <p>Normalizr와 Reselect로 복잡한 API 응답과 파생 데이터 정리, Redux와 Immutable.js 기반 상태 관리 리팩터링</p>
               </div>
             </div>
           </div>
