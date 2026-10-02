@@ -226,6 +226,16 @@
           }
         }, { passive: true });
         addEventListener("resize", update);
+        const clearHash = () => history.replaceState(null, "", location.pathname + location.search);
+        document.addEventListener("click", (event) => {
+          const link = event.target.closest('a[href^="#"]:not(.skip-link)');
+          const target = link && document.querySelector(link.getAttribute("href"));
+          if (!target) return;
+          event.preventDefault();
+          target.scrollIntoView();
+          clearHash();
+        });
+        if (location.hash) addEventListener("load", clearHash, { once: true });
         nav.hidden = false;
         update();
       })();
