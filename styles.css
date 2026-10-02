@@ -65,7 +65,7 @@ img { max-width:100%; }
   *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
 @media print {
-  @page { size:A4; margin:14mm; }
+  @page { size:A4; margin:12mm; }
   body.resume-page { background:white; }
   .site-header,.footer,.skip-link { display:none !important; }
   .resume-shell { padding:0; max-width:none; }
@@ -141,4 +141,23 @@ img { max-width:100%; }
 }
 @media print {
   .scroll-nav { display:none !important; }
+  .resume-block { grid-template-columns:110px 1fr; gap:24px; }
+  .resume-entry { display:block; }
+  .resume-entry > div:first-child { flex-direction:row; align-items:baseline; gap:10px; margin-bottom:6px; break-after:avoid; }
+  .resume-entry + .resume-entry { margin-top:18px; }
+  .resume-summary { break-after:avoid; }
+  .resume-intro { padding-bottom:18px; }
+  .resume-intro h1 { font-size:40px; }
+  .resume-intro > p { margin:4px 0 14px; font-size:17px; }
+  .resume-block { padding:12px 0; }
+  .resume-block p { font-size:12.5px; line-height:1.6; }
+  .resume-entry li { font-size:12px; line-height:1.6; margin-bottom:3px; }
+  .resume-case + .resume-case { margin-top:16px; padding-top:14px; }
+  .resume-subsection + .resume-subsection { margin-top:14px; }
+  .resume-subsection { break-inside:auto; }
+  .resume-entry li { break-inside:avoid; }
+  .resume-case h3 { font-size:15px; }
+  .resume-entry h3 { font-size:14px; margin-bottom:6px; }
+  .resume-subsection h4 { font-size:13px; margin-bottom:4px; }
+  .resume-summary { margin-bottom:10px !important; }
 }
