@@ -161,6 +161,17 @@
         </section>
       </article>
     </main>
+    <nav class="scroll-nav is-hidden" aria-label="섹션 이동" data-scroll-nav hidden>
+      <button class="scroll-nav-toggle" type="button" aria-label="섹션 목록" aria-expanded="false" aria-controls="scroll-nav-list"><span class="scroll-nav-current">01</span> / 05</button>
+      <ol class="scroll-nav-list" id="scroll-nav-list">
+        <li><a href="#intro"><span>01</span>소개</a></li>
+        <li><a href="#highlights"><span>02</span>대표 문제 해결</a></li>
+        <li><a href="#experience"><span>03</span>경력</a></li>
+        <li><a href="#others"><span>04</span>기타</a></li>
+        <li><a href="#skills"><span>05</span>기술</a></li>
+      </ol>
+      <span class="scroll-nav-progress" aria-hidden="true"><i></i></span>
+    </nav>
     <footer class="footer small-footer">
       <div class="footer-bottom">
         <div class="footer-meta">
@@ -170,5 +181,54 @@
         <a href="#main">BACK TO TOP &uarr;</a>
       </div>
     </footer>
+    <script>
+      (() => {
+        const nav = document.querySelector("[data-scroll-nav]");
+        const links = [...nav.querySelectorAll(".scroll-nav-list a")];
+        const sections = links.map((link) => document.querySelector(link.getAttribute("href")));
+        const intro = document.querySelector(".resume-intro");
+        const footer = document.querySelector(".footer");
+        const toggle = nav.querySelector(".scroll-nav-toggle");
+        const current = nav.querySelector(".scroll-nav-current");
+        const setOpen = (open) => {
+          nav.classList.toggle("is-open", open);
+          toggle.setAttribute("aria-expanded", String(open));
+        };
+        let ticking = false;
+        const update = () => {
+          ticking = false;
+          const max = document.documentElement.scrollHeight - innerHeight;
+          nav.style.setProperty("--progress", max > 0 ? Math.min(scrollY / max, 1) : 0);
+          let index = 0;
+          sections.forEach((section, i) => {
+            if (section.getBoundingClientRect().top <= innerHeight * 0.35) index = i;
+          });
+          const last = sections[sections.length - 1];
+          if (max - scrollY < 4 || last.getBoundingClientRect().bottom <= innerHeight) index = sections.length - 1;
+          links.forEach((link, i) => {
+            if (i === index) link.setAttribute("aria-current", "true");
+            else link.removeAttribute("aria-current");
+          });
+          current.textContent = String(index + 1).padStart(2, "0");
+          const hidden = intro.getBoundingClientRect().bottom > 0 || footer.getBoundingClientRect().top < innerHeight;
+          nav.classList.toggle("is-hidden", hidden);
+          if (hidden) setOpen(false);
+        };
+        toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+        links.forEach((link) => link.addEventListener("click", () => setOpen(false)));
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") setOpen(false);
+        });
+        addEventListener("scroll", () => {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+          }
+        }, { passive: true });
+        addEventListener("resize", update);
+        nav.hidden = false;
+        update();
+      })();
+    </script>
   </body>
 </html>
