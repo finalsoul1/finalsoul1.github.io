@@ -147,12 +147,12 @@ img { max-width:100%; }
   .resume-entry + .resume-entry { margin-top:18px; }
   .resume-summary { break-after:avoid; }
   .resume-intro { padding-bottom:18px; }
-  .resume-intro h1 { font-size:40px; }
+  .resume-intro h1 { font-size:36px; }
   .resume-intro > p { margin:4px 0 14px; font-size:17px; }
-  .resume-block { padding:12px 0; }
+  .resume-block { padding:10px 0; }
   .resume-block p { font-size:12.5px; line-height:1.6; }
   .resume-entry li { font-size:12px; line-height:1.6; margin-bottom:3px; }
-  .resume-case + .resume-case { margin-top:16px; padding-top:14px; }
+  .resume-case + .resume-case { margin-top:12px; padding-top:12px; }
   .resume-subsection + .resume-subsection { margin-top:14px; }
   .resume-subsection { break-inside:auto; }
   .resume-entry li { break-inside:avoid; }
