@@ -139,7 +139,10 @@ img { max-width:100%; }
   .scroll-nav-list a { padding:6px 8px; }
   .scroll-nav-progress { left:8px; right:8px; bottom:6px; background:var(--rule-light); }
 }
+.print-only { display:none; }
 @media print {
+  .print-only { display:inline; }
+  .screen-only { display:none; }
   .scroll-nav { display:none !important; }
   .resume-block { grid-template-columns:110px 1fr; gap:24px; }
   .resume-entry { display:block; }

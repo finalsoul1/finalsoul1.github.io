@@ -1,6 +1,6 @@
 권병준
 프런트엔드 개발자
-finalsoul1@gmail.com | https://www.linkedin.com/in/병준-권-487a731bb | https://github.com/finalsoul1
+finalsoul1@gmail.com | https://finalsoul1.github.io/ | https://github.com/finalsoul1 | https://www.linkedin.com/in/병준-권-487a731bb
 
 소개
 8년차 프런트엔드 개발자. 대량의 데이터를 다루는 화면의 성능 개선, 여러 팀이 함께 만드는 기능의 API 계약과 연동 규격 정리, 개발 속도를 높이면서도 검증 범위를 지키는 체계 구축에 강점.
