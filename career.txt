@@ -1,6 +1,6 @@
 권병준
 프런트엔드 개발자
-finalsoul1@gmail.com | https://finalsoul1.github.io/ | https://github.com/finalsoul1 | https://www.linkedin.com/in/병준-권-487a731bb
+finalsoul1@gmail.com | https://finalsoul1.github.io/ | https://www.linkedin.com/in/병준-권-487a731bb
 
 소개
 8년차 프런트엔드 개발자. 대량의 데이터를 다루는 화면의 성능 개선, 여러 팀이 함께 만드는 기능의 API 계약과 연동 규격 정리, 개발 속도를 높이면서도 검증 범위를 지키는 체계 구축에 강점.
@@ -36,7 +36,7 @@ finalsoul1@gmail.com | https://finalsoul1.github.io/ | https://github.com/finals
 - Sentry 오류에 배포 버전, 앱 버전, 회원 상태를 보강하고, 진입 직후 오류가 누락되던 문제를 SDK 로드 순서 수정으로 해결. 요청 URL, 쿼리, 이동 기록에 남는 계좌번호를 수집 전에 마스킹
 - 흩어진 팀 개발 문서를 검색 가능한 VitePress 문서 사이트로 구축
 AI 기반 개발 워크플로와 생산성 도구
-- Claude Code 기반 개발 워크플로 구축. 이슈 등록부터 워크트리, 커밋, MR, 배포 태그와 배포 노트까지 팀 개발 절차를 스킬 20여 개로 연결. 배포 노트는 같은 태그 범위면 항상 같은 결과가 나오도록 LLM 없이 git 규칙으로 생성하고, MR마다 변경 해설과 이해도 퀴즈를 만들어 사람이 이해한 뒤 머지하도록 설계
+- Claude Code 기반 개발 워크플로 구축. 이슈 등록부터 워크트리, 커밋, MR, 배포 태그와 배포 노트까지 팀 개발 절차를 스킬 20여 개로 연결. 배포 노트는 같은 태그 범위면 항상 같은 결과가 나오도록 LLM 없이 git 규칙으로 생성하고, MR마다 변경 해설과 이해도 퀴즈를 만들어 사람이 이해한 뒤 머지하도록 설계. 범용 스킬 5개와 공용 지침은 저장소로 공개 https://github.com/finalsoul1/coding-agent-harness
 - YouTrack 이슈, GitLab epic과 작업 이슈, MR을 한 화면에서 추적하고 상태를 바꾸는 파이프라인 대시보드와, 같은 데이터를 검색창 하나에서 병렬 검색하는 Raycast 확장 개발
 - GitLab Duo 자동 MR 리뷰 규칙을 2개 저장소에 도입하고 취향이 아닌 사실 오류만 지적하도록 범위를 좁혀 오탐 보정. 이후 팀원이 디자인 시스템 기준을 이어서 확장. 팀 공용 MR 작성 스킬에 작업 이슈 참조 필수화
 

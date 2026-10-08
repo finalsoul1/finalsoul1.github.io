@@ -140,6 +140,7 @@ img { max-width:100%; }
   .scroll-nav-progress { left:8px; right:8px; bottom:6px; background:var(--rule-light); }
 }
 .print-only { display:none; }
+.resume-entry li a { text-decoration:underline; text-underline-offset:3px; }
 @media print {
   .print-only { display:inline; }
   .screen-only { display:none; }
