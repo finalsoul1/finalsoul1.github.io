@@ -1,0 +1,188 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="요청 하나는 접수와 대기를 거쳐 토큰으로 잘린다. 서버는 prefill로 첫 토큰을 고른 뒤 decode로 한 토큰씩 이어 간다. 고른 토큰은 그때그때 보내고, <EOS>가 나오면 멈춘 뒤 KV 캐시 메모리를 비운다."><title>실제 요청 하나를 끝까지 따라가기 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="실제 요청 하나를 끝까지 따라가기"><meta property="og:description" content="요청 하나는 접수와 대기를 거쳐 토큰으로 잘린다. 서버는 prefill로 첫 토큰을 고른 뒤 decode로 한 토큰씩 이어 간다. 고른 토큰은 그때그때 보내고, <EOS>가 나오면 멈춘 뒤 KV 캐시 메모리를 비운다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/llm-inference/06-one-request/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg" type="image/svg+xml"><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C51aazlg.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden>검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">LLM에 보낸 질문이 답이 되기까지 / 06-07</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#deeper">더 깊이</a><a href="#출처">출처</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 06 / 2026.10.20</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="실제 요청 하나를 끝까지 따라가기">실제 요청 하나를 끝까지 따라가기<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="지난-편">지난 편</h2>
+<p><a href="/notes/llm-inference/05-faster-repetition/">5편</a>에서 입력 전체를 한꺼번에 계산하는 <a href="/notes/llm-inference/05-faster-repetition/">prefill</a>, 새 토큰 하나씩 계산하는 <a href="/notes/llm-inference/05-faster-repetition/">decode</a>, 앞의 계산 결과를 저장해 다시 쓰는 <a href="/notes/llm-inference/05-faster-repetition/">KV 캐시</a>를 봤다.</p>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>요청 하나는 접수와 대기를 거쳐 토큰으로 잘린다. 서버는 prefill로 첫 토큰을 고른 뒤 decode로 한 토큰씩 이어 간다. 고른 토큰은 그때그때 보내고, <code>&#x3C;EOS></code>가 나오면 멈춘 뒤 KV 캐시 메모리를 비운다.</p>
+<h2 id="쉽게-보기">쉽게 보기</h2>
+<p>1~5편의 예시 요청에 <code>"stream": true</code>만 더해 보낸다고 하자. 보낸 순간부터 답이 다 나올 때까지를 순서대로 놓으면 이렇다.</p>
+<pre><code class="language-text">단계                                      이 시점의 데이터 (가상 값)
+
+[클라이언트]
+  1. 질문을 보낸다                        "토마토는 과일이야?"
+[앱 서버]
+  2. 요청을 만들어 API로 보낸다           system + messages + "stream": true
+[API 서버]
+  3. API 키를 확인하고 차례를 기다린다
+[LLM 서버]
+  4. 토큰으로 자른다                      토큰 ID 16개
+  5. 다른 요청과 묶어 GPU에 올린다
+  6. prefill: 입력 16개를 한꺼번에 계산   [16, 3584] -> 캐시 16
+  7. 첫 토큰을 고른다                     네 (4512)
+  8. 고른 토큰을 바로 보낸다              "네"
+  9. decode: 한 토큰씩 반복               , -> 과일입니다. -> &#x3C;EOS>  캐시 17 -> 18 -> 19
+ 10. &#x3C;EOS>가 나오면 멈춘다                stop_reason: "end_turn"
+ 11. 자원을 정리한다                      KV 캐시 19토큰 분량을 비운다
+</code></pre>
+<p>API 서버와 LLM 서버를 나눈 것은 설명용이다. Claude의 내부 구성, 입력 형식, 벡터 길이 같은 설정값은 공개되어 있지 않다. 그래서 서버 내부 동작(특히 5단계와 11단계)은 vLLM 같은 일반적인 서빙 엔진을, 입력 형식과 설정값은 공개 모델을 기준으로 설명한다.</p>
+<p><strong>1~2. 요청 만들기</strong> (<a href="/notes/llm-inference/02-text-to-numbers/">2편</a>). 앱 서버가 질문에 시스템 지침을 붙여 요청을 만든다. 2편의 요청에 <code>stream</code>만 더했고 <code>temperature</code> 같은 값은 넣지 않았다.</p>
+<pre><code class="language-json">{
+  "model": "claude-opus-5-5",
+  "max_tokens": 1024,
+  "system": "짧게 답하세요.",
+  "messages": [
+    { "role": "user", "content": "토마토는 과일이야?" }
+  ],
+  "stream": true
+}
+</code></pre>
+<p><strong>3. 접수.</strong> API 서버는 API 키를 확인한다. 요청이 몰려 있으면 계산을 시작하기 전에 차례를 기다린다.</p>
+<p><strong>4. 토큰으로 자르기</strong> (<a href="/notes/llm-inference/02-text-to-numbers/">2편</a>). 시스템 지침과 질문을 정해진 형식으로 잇고, <a href="/notes/llm-inference/02-text-to-numbers/">토크나이저</a>가 <a href="/notes/llm-inference/01-big-picture/">토큰</a> 16개로 잘라 <a href="/notes/llm-inference/02-text-to-numbers/">토큰 ID</a>로 바꾼다. ID는 2편의 예시 토큰 표 그대로다. 잇는 형식은 공개 모델의 흔한 형태를 따랐다.</p>
+<pre><code class="language-text">[5, 21873, 1240, 6150, 703, 2981, 13, 6, 7, 7342, 9180, 412, 1785, 30, 8, 9]
+</code></pre>
+<p><strong>5. 다른 요청과 묶기</strong> (<a href="/notes/llm-inference/05-faster-repetition/">5편</a>). 서버는 이 요청을 그 순간 들어와 있는 다른 요청과 묶어 GPU에서 함께 계산한다. 요청끼리 내용이 섞이지는 않는다. 이 요청의 KV 캐시를 둘 GPU 메모리가 남아 있어야 묶음에 들어간다.</p>
+<p><strong>6. prefill</strong> (<a href="/notes/llm-inference/03-mixing-context/">3편</a>, 5편). 토큰 ID 16개로 <a href="/notes/llm-inference/02-text-to-numbers/">임베딩</a> 표에서 벡터 16개를 꺼낸다. <code>[토큰 수, 벡터 길이]</code> 모양으로는 <code>[16, 3584]</code>다. 3,584는 2편에서 본 Qwen2.5-7B의 벡터 길이다. 이 벡터들은 <a href="/notes/llm-inference/03-mixing-context/">레이어</a>를 차례로 지나며 <a href="/notes/llm-inference/03-mixing-context/">어텐션</a>으로 앞 문맥을 섞는다. 레이어를 지나도 모양은 <code>[16, 3584]</code> 그대로다. 그사이 레이어마다 위치 0~15의 값이 KV 캐시에 쌓인다.</p>
+<p><strong>7. 첫 토큰 고르기</strong> (<a href="/notes/llm-inference/04-picking-next-token/">4편</a>). 위치 15의 마지막 벡터로 <a href="/notes/llm-inference/04-picking-next-token/">로짓</a>을 내고 <a href="/notes/llm-inference/04-picking-next-token/">확률 분포</a>로 바꾼다. 요청에 <a href="/notes/llm-inference/04-picking-next-token/">temperature</a>가 없으니 API 기본값 1.0이 적용된다. 4편의 가상 값에서는 <code>네</code>가 0.70, <code>아니</code>가 0.30이고, 여기서는 <code>네</code>(4512)가 뽑혔다.</p>
+<p><strong>8. 바로 보내기</strong> (<a href="/notes/llm-inference/01-big-picture/">1편</a>). LLM 서버는 4512를 글자 <code>네</code>로 바꿔 곧바로 보낸다. 앱 서버는 받은 조각을 클라이언트에 넘긴다. 첫 글자가 보이기까지 1~7단계를 모두 거쳐야 한다. <a href="/notes/llm-inference/01-big-picture/">스트리밍</a>을 켰으니 그 뒤로는 토큰이 나오는 대로 화면에 붙는다.</p>
+<pre><code class="language-text">event: content_block_delta  ... "text": "네"
+event: content_block_delta  ... "text": ","
+event: content_block_delta  ... "text": " 과일입니다."
+event: message_delta        ... "stop_reason": "end_turn"
+event: message_stop
+</code></pre>
+<p><code>text</code> 내용은 가상이고, 일부 이벤트는 생략했다. 조각 하나에 토큰 여러 개가 담길 수도 있다(1편 더 깊이).</p>
+<p><strong>9. decode 반복</strong> (<a href="/notes/llm-inference/05-faster-repetition/">5편</a>). 이제 방금 고른 토큰 하나만 <code>[1, 3584]</code> 모양으로 넣는다. 앞 위치의 값은 KV 캐시에서 꺼내 쓰고, 고른 토큰은 8단계처럼 바로 나간다. 표는 5편 그대로다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>단계</th><th>이번에 계산하는 위치</th><th>고른 토큰</th><th>계산 뒤 캐시 토큰 수</th></tr></thead><tbody><tr><td>prefill</td><td>0~15 (입력 16개 전부)</td><td><code>네</code></td><td>16</td></tr><tr><td>decode 1</td><td>16 <code>네</code></td><td><code>,</code></td><td>17</td></tr><tr><td>decode 2</td><td>17 <code>,</code></td><td><code>과일입니다.</code></td><td>18</td></tr><tr><td>decode 3</td><td>18 <code>과일입니다.</code></td><td><code>&#x3C;EOS></code></td><td>19</td></tr></tbody></table>
+<p><strong>10. 끝내기</strong> (<a href="/notes/llm-inference/04-picking-next-token/">4편</a>). decode 3에서 <code>&#x3C;EOS></code>가 뽑히면 반복이 멈춘다. <code>&#x3C;EOS></code>는 글자로 바꿔 보내지 않는다. 대신 API는 끝부분의 <code>message_delta</code> 이벤트에 <code>stop_reason</code>을 <code>"end_turn"</code>으로 담는다. <a href="https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons">Claude 문서</a>는 <code>end_turn</code>이 응답을 자연스럽게 마쳤다는 뜻이라고 설명한다. <code>end_turn</code>이 <code>&#x3C;EOS></code>를 고른 결과라는 것도 일반 엔진 기준의 설명이다.</p>
+<p><strong>11. 자원 정리</strong> (<a href="/notes/llm-inference/05-faster-repetition/">5편</a>). 요청이 끝나면 서버는 KV 캐시 19토큰 분량의 GPU 메모리를 비워 다른 요청에 내준다. 다음 질문 <code>그럼 수박은?</code>은 앞 대화를 담은 새 요청이라 1단계부터 다시 시작한다.</p>
+<p>응답 시간도 이 순서로 나눠 볼 수 있다.</p>
+<ul>
+<li>첫 글자까지: 네트워크를 오가는 시간, 3단계와 5단계의 대기, 6단계 prefill. 대기는 몰린 요청 수에, prefill은 입력 길이에 따라 늘어난다.</li>
+<li>첫 글자 뒤: 9단계 decode가 한 토큰씩 내놓는 속도. 출력이 길수록 늦게 끝난다.</li>
+</ul>
+<details id="deeper">
+<summary>더 깊이</summary>
+<p><strong>서버가 여러 요청을 묶어 계산하는 이유.</strong></p>
+<p>이 절도 vLLM 같은 일반 엔진 기준이다. <a href="/notes/llm-inference/05-faster-repetition/">5편 더 깊이</a>에서 본 것처럼 decode는 단계마다 모델 가중치 전체를 메모리에서 읽는다. 요청 하나만 계산하면 읽은 가중치를 토큰 하나에만 쓰고 끝난다. 여러 요청을 묶으면 한 번 읽은 가중치를 묶인 요청 모두에 쓰므로 읽는 비용이 요청 수만큼 나뉜다. vLLM 논문 <a href="https://arxiv.org/abs/2309.06180">Efficient Memory Management for Large Language Model Serving with PagedAttention</a> 2.3절이 같은 이유를 든다.</p>
+<p>이렇게 묶어 한 번에 처리하는 단위를 배치라고 하고, 어느 요청을 언제 배치에 넣을지 정하는 부분을 스케줄러라고 한다. 같은 논문 4.5절에 따르면 vLLM은 먼저 온 요청을 먼저 처리한다(first-come-first-serve). 배치에 넣을 수 있는 요청 수의 상한은 KV 캐시를 둘 GPU 메모리 크기로 정해진다(같은 논문 3절, 5편 더 깊이 참고).</p>
+<p><strong>배치에서 빠지고 들어오는 방식: continuous batching.</strong></p>
+<p>요청마다 도착 시각과 출력 길이가 다르다. 배치를 한 번 짜서 모든 요청이 끝날 때까지 그대로 두면, 일찍 끝난 요청의 자리는 비어 있고 새 요청은 가장 긴 요청이 끝나야 들어갈 수 있다. 그래서 서빙 엔진은 대개 decode 반복이 한 번 끝날 때마다 배치를 다시 짠다. 같은 논문 2.3절의 설명대로 끝난 요청은 배치에서 빼고 기다리던 요청을 넣으므로, 새 요청은 반복 한 번만 기다리면 들어갈 수 있다. 논문은 이 방식을 Orca(Yu et al., OSDI 2022)의 iteration-level scheduling으로 소개한다. 길이가 다른 요청끼리 빈칸으로 길이를 맞추지 않고도 함께 처리할 수 있게 하는 GPU 계산 방식도 함께 언급한다. <a href="https://github.com/vllm-project/vllm">vLLM 저장소</a>의 README는 이 기능을 continuous batching이라고 부른다.</p>
+<p>토마토 예시로 보면, decode 1~3을 하는 동안 같은 배치의 다른 요청이 끝나서 빠지거나 새 요청이 들어올 수 있다. 이 요청이 decode 3에서 <code>&#x3C;EOS></code>를 고르면 다음 반복부터 배치에서 빠진다. 같은 논문 4.3절은 생성을 마친 요청의 KV 캐시 공간을 비워 다른 요청의 KV 캐시를 담는다고 설명한다. 11단계의 자원 정리가 이것이다.</p>
+<p>배치를 반복마다 다시 짜므로 배치 크기도 반복마다 달라질 수 있다. <a href="/notes/llm-inference/04-picking-next-token/">4편 더 깊이</a>에서 temperature 0으로도 같은 답이 보장되지 않는 원인으로 배치 크기 변화를 들었다. 그 변화가 바로 여기서 생긴다.</p>
+</details>
+<h2 id="출처">출처</h2>
+<p>원글 <a href="https://jonghyuk.kim/knowledges/from-user-input-to-llm-output/">LLM에게 질문하면 일어나는 일들</a>을 읽고 다시 정리했다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/llm-inference/05-faster-repetition/" rel="prev"><span>&larr; 이전 편</span><strong>한 번 한 계산은 다시 하지 않기</strong></a><a class="note-pager-next" href="/notes/llm-inference/07-follow-up-questions/" rel="next"><span>다음 편 &rarr;</span><strong>이어지는 질문 세 개</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>

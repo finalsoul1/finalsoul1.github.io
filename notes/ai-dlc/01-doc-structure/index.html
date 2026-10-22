@@ -1,0 +1,328 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="AI가 다음 작업에서 다시 읽을 스펙 문서는 고치는 시점에 따라 파일을 나눈다. 지금 동작, 판단 이유, 이슈별 작업 기록을 각각 따로 둔다."><title>이슈가 이어져도 섞이지 않는 스펙 문서 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="이슈가 이어져도 섞이지 않는 스펙 문서"><meta property="og:description" content="AI가 다음 작업에서 다시 읽을 스펙 문서는 고치는 시점에 따라 파일을 나눈다. 지금 동작, 판단 이유, 이슈별 작업 기록을 각각 따로 둔다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/ai-dlc/01-doc-structure/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg" type="image/svg+xml"><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C51aazlg.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden>검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">AI-DLC 스펙 문서 구조 / 01-01</span><div><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#출처">출처</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 01 / 2026.10.21</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="이슈가 이어져도 섞이지 않는 스펙 문서">이슈가 이어져도 섞이지 않는 스펙 문서<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>AI가 다음 작업에서 다시 읽을 스펙 문서는 고치는 시점에 따라 파일을 나눈다. 지금 동작, 판단 이유, 이슈별 작업 기록을 각각 따로 둔다.</p>
+<h2 id="쉽게-보기">쉽게 보기</h2>
+<p>AI-DLC(AI-Driven Development Life Cycle)는 코드를 짜기 전에 요구사항, 수용조건, 설계, 작업 목록을 문서로 먼저 쓰고, AI가 그 문서를 읽으며 구현하는 방식이다. AWS가 처음 공개한 버전은 저장소 루트의 폴더 하나에 작업 하나의 문서만 두었고, 새 작업을 시작하면 그 폴더를 덮어썼다. 이 글은 그 문서를 기능마다 폴더로 나눠 남기는 방식을 전제로 한다.</p>
+<pre><code class="language-text">log-load/
+  requirements.md   배경과 범위
+  stories.md        사용자 스토리와 수용조건. AC-1, AC-2처럼 번호를 붙인다
+  design.md         설계
+  plan.md           작업 목록. 커밋 하나에 대응하는 작업에 B1, B2처럼 번호를 매긴다
+  decisions.md      판단과 이유. D-1, D-2처럼 번호를 매긴다
+</code></pre>
+<p>이슈를 시작할 때 사람과 AI가 함께 이 문서를 쓰고, 구현 단계에서는 AI가 plan.md의 작업을 하나씩 진행하며 커밋한다. 이슈 하나를 스펙부터 구현까지 끝내기에는 잘 맞는다.</p>
+<p>문제는 같은 기능에 새 이슈가 들어올 때 생긴다. 로그 수집 기능을 만든 뒤 전송 순서를 고치는 이슈가 이어졌다고 하자. 두 번째 이슈의 작업을 같은 <code>log-load/</code> 문서에 이어 쓰면 아래 세 가지가 문제가 된다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>문제가 되는 것</th><th>무슨 일이 생기나</th></tr></thead><tbody><tr><td>지금 동작</td><td>첫 이슈의 수용조건에 두 번째 이슈에서 바뀐 동작이 섞인다. 어느 쪽이 지금 동작인지 문서만 봐서는 모른다.</td></tr><tr><td>작업 번호</td><td>첫 이슈가 B1~B5를 썼으니 두 번째 이슈의 첫 작업은 B6이 된다. 그런데 커밋 메시지에는 이슈 기준으로 B1이라고 적는다.</td></tr><tr><td>폴더 이름</td><td>폴더 이름이 첫 이슈 범위(예: <code>log-load</code>)라 다음 이슈와 맞지 않는다. 같은 기능의 문서 폴더가 둘 생기기도 한다.</td></tr></tbody></table>
+<p>사람은 문서가 조금 섞여도 맥락으로 읽어 낸다. 하지만 AI는 다음 작업에서 이 문서를 지금 동작의 근거로 그대로 읽는다. 문서가 섞여 있으면 AI는 틀린 전제로 구현한다.</p>
+<p>그래서 문서를 고치는 시점에 따라 셋으로 나눈다.</p>
+<pre><code class="language-text">log/
+  README.md        지금 동작. 동작이 바뀔 때마다 고친다
+  decisions.md     판단과 이유. 판단이 생길 때 추가하고 지우지 않는다
+  tickets/
+    ISSUE-1-load.md              이슈별 작업 기록. 이슈가 끝나면 고치지 않는다
+    ISSUE-2-load-after-view.md
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>상황</th><th>이어 쓰는 구조</th><th>나눈 구조</th></tr></thead><tbody><tr><td>이슈가 하나 더 들어오면</td><td>기존 문서에 이어 쓴다</td><td>tickets에 파일 하나를 추가한다</td></tr><tr><td>지금 동작을 알려면</td><td>두 이슈의 내용이 섞인 문서를 읽는다</td><td>README 하나를 읽는다</td></tr><tr><td>새 수용조건 번호</td><td>AC-9 (앞 이슈에 이어서)</td><td>ISSUE-2 AC-1</td></tr></tbody></table>
+<p>다음 작업자와 AI는 README 하나만 읽으면 지금 동작을 안다.</p>
+<h2 id="새-용어">새 용어</h2>
+<ul>
+<li><strong>AI-DLC</strong>: AWS가 제안한 AI 중심 개발 흐름. 사람이 의도를 정하고, AI가 요구사항, 설계, 작업 단위를 문서로 만든 뒤 구현한다. 단계마다 사람이 확인한다.</li>
+<li><strong>수용조건(AC, Acceptance Criteria)</strong>: 이 동작이면 끝났다고 보는 기준. 테스트 이름에 번호를 붙여 동작과 테스트를 잇기도 한다.</li>
+<li><strong>bolt(B)</strong>: AI-DLC의 작업 단위. 여기서는 커밋 하나에 대응하는 작업으로 쓴다.</li>
+<li><strong>담당 경로</strong>: 기능 README frontmatter에 적는, 그 기능이 맡는 코드 경로 목록.</li>
+</ul>
+<details id="deeper">
+<summary>더 깊이</summary>
+<p><strong>검토한 다른 안.</strong></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>안</th><th>쓰지 않은 이유</th></tr></thead><tbody><tr><td>화면 주소별 폴더</td><td>기능 하나가 여러 화면에 걸친다. 화면이 없는 작업은 둘 곳이 없다.</td></tr><tr><td>기능 아래 이슈별 폴더</td><td>이슈끼리 섞이지는 않지만, 지금 동작을 알려면 이슈 폴더를 전부 읽어야 한다. AI가 작업마다 읽는 문서라 분량이 늘면 안 된다.</td></tr></tbody></table>
+<p><strong>언제 무엇을 고치나.</strong></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>시점</th><th>README</th><th>decisions</th><th>tickets</th></tr></thead><tbody><tr><td>이슈 시작</td><td>읽기만 한다</td><td>읽고, 판단이 생기면 추가한다</td><td>새로 만든다</td></tr><tr><td>작업마다</td><td>동작을 바꾼 커밋에서 고친다</td><td>판단이 생기면 추가한다</td><td>작업 목록을 체크한다</td></tr><tr><td>이슈가 끝난 뒤</td><td>-</td><td>-</td><td>고치지 않는다</td></tr><tr><td>스펙만 먼저 머지하는 큰 이슈</td><td>구현 MR에서 고친다</td><td>판단이 생기면 추가한다</td><td>먼저 머지한다</td></tr></tbody></table>
+<p>스펙을 먼저 머지할 때 README를 같이 고치면 아직 구현하지 않은 동작이 지금 동작 문서에 들어간다. 그래서 README만 구현 MR로 미룬다.</p>
+<p><strong>번호 규칙.</strong> 새 수용조건과 판단은 <code>ISSUE-2 AC-1</code>, <code>ISSUE-2 D-1</code>처럼 이슈 번호를 붙인다. 두 사람이 같은 기능을 동시에 작업해도 번호가 겹치지 않는다. 작업 번호는 이슈마다 B1부터 시작해 커밋 메시지와 맞춘다. 테스트 이름이 이미 쓰고 있는 기존 <code>AC-n</code>은 그대로 둔다.</p>
+<p><strong>폴더 찾기.</strong> README frontmatter에 담당 경로를 적는다.</p>
+<pre><code class="language-yaml">---
+code:
+  - src/share/utils/log
+  - src/share/components/LogReporter.tsx
+---
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>상황</th><th>어디에 쓰나</th></tr></thead><tbody><tr><td>바꿀 파일이 한 기능의 담당 경로에 속함</td><td>그 기능 폴더</td></tr><tr><td>여러 기능에 걸침</td><td>바꿀 파일이 가장 많은 기능 폴더에 기록 파일 하나. 나머지 기능은 README만 고친다</td></tr><tr><td>어느 담당 경로에도 없음</td><td>사람이 새 기능 폴더 이름을 정한다</td></tr><tr><td>한 기능이 너무 커짐</td><td>같은 층위의 기능 폴더로 나눈다</td></tr></tbody></table>
+<p>두 기능이 같은 경로를 맡지 않는지는 문서 빌드에서 검사할 계획이다. 사람이 판단하는 때는 새 기능 폴더 이름을 정할 때와 커진 기능을 나눌 때뿐이다.</p>
+<p><strong>README가 낡지 않게 하기.</strong> 이 구조는 “동작을 바꾼 커밋에서 README도 고친다”는 규칙에 기댄다. 규칙이 지켜지려면 코드를 고치는 쪽이 README가 있다는 걸 알아야 한다. 그런데 지금은 문서가 코드를 가리킬 뿐이고, 코드 파일 쪽에서는 자기 문서가 있는지 알 수 없다.</p>
+<p>코드에 문서 링크 주석을 넣지는 않는다. 담당 경로와 같은 정보를 두 곳에서 관리하게 되고 주석은 쉽게 낡는다. 대신 파일 경로로 담당 README를 찾는 스크립트를 하나 만들고, 아래 장치들이 모두 이 스크립트를 쓴다. 스크립트와 장치는 아직 설계만 했다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>시점</th><th>장치</th></tr></thead><tbody><tr><td>AI가 파일을 고치기 직전</td><td>그 파일의 README와 decisions를 먼저 읽으라고 알리는 훅. 막지 않고, 세션마다 기능별로 한 번만 알린다</td></tr><tr><td>AI가 커밋하기 직전</td><td>담당 파일은 바뀌었는데 README가 스테이징되지 않았으면 다시 알리는 훅</td></tr><tr><td>MR을 올릴 때</td><td>담당 코드를 바꿨는데 README가 그대로면 경고. 사람이나 훅이 없는 다른 AI 도구가 고친 코드는 여기서 걸러진다</td></tr><tr><td>작업을 시작할 때</td><td>README를 마지막으로 고친 커밋 이후 담당 경로의 변경을 찾아, 어긋나면 문서부터 맞춘다</td></tr></tbody></table>
+<p>경고는 MR을 막지 않는다. 동작이 바뀌지 않는 정리 MR에도 경고가 뜨므로, 막으면 작업자가 무시하거나 우회하게 된다.</p>
+<p><strong>AWS AI-DLC와 비교.</strong></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>AWS 첫 버전</th><th>AWS 지금 버전</th><th>이 구조</th></tr></thead><tbody><tr><td>작업 기록</td><td>폴더 하나 (새 작업이 덮어씀)</td><td>작업마다 새 폴더</td><td>이슈마다 기록 파일</td></tr><tr><td>현재 상태</td><td>-</td><td>저장소 단위로 따로 둠</td><td>기능 단위 README</td></tr><tr><td>현재 상태를 고치는 때</td><td>-</td><td>논의 중 (RFC #1055)</td><td>동작을 바꾼 커밋에서</td></tr></tbody></table>
+<p>AWS도 작업 기록과 현재 상태를 나누는 방향으로 바뀌었다. 다만 현재 상태를 언제 고칠지는 아직 정하지 못했다.</p>
+<p><strong>아직 모르는 것.</strong></p>
+<ul>
+<li>README를 꾸준히 고치게 될지는 운영해 봐야 안다. 이슈 몇 건을 진행한 뒤 다시 점검한다.</li>
+<li>담당 경로 검사, 경로로 README 찾기, 훅, MR 경고는 설계만 했다.</li>
+<li>Claude Code의 편집 직전(PreToolUse) 훅이 안내를 덧붙이는 출력(<code>additionalContext</code>)을 지원하는지 확인하지 않았다.</li>
+<li>README의 수용조건 번호와 테스트 이름을 대조하는 검사를 둔다면, 테스트 이름에 번호가 없는 기존 수용조건을 어떻게 다룰지 정하지 않았다.</li>
+</ul>
+</details>
+<h2 id="출처">출처</h2>
+<ul>
+<li>Raja SP, <a href="https://aws.amazon.com/blogs/devops/ai-driven-development-life-cycle/">AI-Driven Development Life Cycle: Reimagining Software Engineering</a>, AWS DevOps Blog, 2025-07-31</li>
+<li><a href="https://github.com/awslabs/aidlc-workflows">awslabs/aidlc-workflows</a> (2026-10 main 기준): <code>docs/guide/03-spaces-and-intents.md</code>, <code>docs/guide/14-artifacts-reference.md</code></li>
+<li><a href="https://github.com/awslabs/aidlc-workflows/issues/1055">RFC #1055 Refresh the CodeKB at the end of every code-producing intent</a></li>
+</ul></div><nav class="note-pager" aria-label="이전 편과 다음 편"></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>

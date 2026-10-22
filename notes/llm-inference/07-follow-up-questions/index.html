@@ -1,0 +1,376 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="대화가 이어지면 앱 서버는 대화 전체를 다시 보내고, LLM 서버는 앞부분이 같으면 그 부분의 계산을 재사용한다."><title>이어지는 질문 세 개 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="이어지는 질문 세 개"><meta property="og:description" content="대화가 이어지면 앱 서버는 대화 전체를 다시 보내고, LLM 서버는 앞부분이 같으면 그 부분의 계산을 재사용한다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/llm-inference/07-follow-up-questions/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg" type="image/svg+xml"><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C51aazlg.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden>검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">LLM에 보낸 질문이 답이 되기까지 / 07-07</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 07 / 2026.10.20</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="이어지는 질문 세 개">이어지는 질문 세 개<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="지난-편">지난 편</h2>
+<p><a href="/notes/llm-inference/06-one-request/">6편</a>에서 요청 하나가 접수부터 <code>&#x3C;EOS></code>까지 거치는 단계를 끝까지 따라가 봤다.</p>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>대화가 이어지면 앱 서버는 대화 전체를 다시 보내고, LLM 서버는 앞부분이 같으면 그 부분의 계산을 재사용한다.</p>
+<h2 id="쉽게-보기">쉽게 보기</h2>
+<p>6편의 대화에 질문 세 개를 차례로 붙여 보낸다. <a href="/notes/llm-inference/02-text-to-numbers/">2편 더 깊이</a>에서 본 것처럼 API는 앞 대화를 기억하지 않는다. 그래서 앱 서버는 질문마다 대화 전체를 <code>messages</code>에 담아 다시 보낸다. 첫 후속 질문 <code>그럼 수박은?</code>의 요청은 6편 요청 끝에 메시지 두 개가 붙은 모양이다.</p>
+<pre><code class="language-json">{
+  "model": "claude-opus-5-5",
+  "max_tokens": 1024,
+  "system": "짧게 답하세요.",
+  "messages": [
+    { "role": "user", "content": "토마토는 과일이야?" },
+    { "role": "assistant", "content": "네, 과일입니다." },
+    { "role": "user", "content": "그럼 수박은?" }
+  ],
+  "stream": true
+}
+</code></pre>
+<p>두 번째와 세 번째 질문도 같은 방식으로 직전 답과 새 질문이 <code>messages</code> 끝에 붙는다. 이 대화를 2편처럼 텍스트 하나로 이어 <a href="/notes/llm-inference/01-big-picture/">토큰</a>으로 자르면 아래와 같다. 위치 0~15는 2편 표 그대로이고, 나머지 토큰 경계와 <a href="/notes/llm-inference/02-text-to-numbers/">토큰 ID</a>도 모두 가상 값이다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>위치</th><th>토큰</th><th>토큰 ID</th><th>구분</th></tr></thead><tbody><tr><td>0~15</td><td><code>&#x3C;system></code> … <code>&#x3C;assistant></code></td><td>5 … 9</td><td>2편 표 그대로</td></tr><tr><td>16~18</td><td><code>네</code> <code>,</code> <code>과일입니다.</code></td><td>4512, 27, 9311</td><td>첫 답</td></tr><tr><td>19~26</td><td><code>&#x3C;/assistant></code> <code>&#x3C;user></code> <code>그럼</code> <code>수박</code> <code>은</code> <code>?</code> <code>&#x3C;/user></code> <code>&#x3C;assistant></code></td><td>10, 7, 8807, 15634, 527, 30, 8, 9</td><td>질문 1</td></tr><tr><td>27~29</td><td><code>수박</code> <code>도</code> <code>과일입니다.</code></td><td>15634, 1093, 9311</td><td>답 1 (뒤에 <code>&#x3C;EOS></code>, ID 4)</td></tr><tr><td>30~40</td><td><code>&#x3C;/assistant></code> <code>&#x3C;user></code> <code>그럼</code> <code>왜</code> <code>채소</code> <code>라고</code> <code>도</code> <code>해</code> <code>?</code> <code>&#x3C;/user></code> <code>&#x3C;assistant></code></td><td>10, 7, 8807, 3317, 18245, 2210, 1093, 1126, 30, 8, 9</td><td>질문 2</td></tr><tr><td>41~45</td><td><code>농업</code> <code>에서는</code> <code>채소</code> <code>로</code> <code>분류합니다.</code></td><td>20417, 3804, 18245, 380, 12650</td><td>답 2 (뒤에 <code>&#x3C;EOS></code>, ID 4)</td></tr><tr><td>46~53</td><td><code>&#x3C;/assistant></code> <code>&#x3C;user></code> <code>자세히</code> <code>설명</code> <code>해</code> <code>줘</code> <code>&#x3C;/user></code> <code>&#x3C;assistant></code></td><td>10, 7, 24871, 9533, 1126, 6402, 8, 9</td><td>질문 3</td></tr><tr><td>54~61</td><td><code>수박</code> <code>은</code> <code>밭</code> <code>에서</code> <code>자라는</code> <code>한해살이</code> <code>식물</code> <code>이라</code></td><td>15634, 527, 24410, 1457, 16032, 31958, 10294, 2655</td><td>답 3 (8개에서 멈춤)</td></tr></tbody></table>
+<p>답을 다시 보낼 때는 생성할 때 고른 <code>&#x3C;EOS></code> 자리에 닫는 표시 <code>&#x3C;/assistant></code>(토큰 ID 10)가 들어간다. <code>&#x3C;EOS></code>는 원래 입력에 붙지 않았으므로 앞 답의 토큰은 <code>&#x3C;EOS></code> 앞까지만 남는다. 이 표시 방식은 2편처럼 공개 모델의 흔한 형식을 따른 것이고, Claude의 실제 형식은 공개되어 있지 않다.</p>
+<p>질문마다 정리하면 이렇다(모두 가상 값).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>질문</th><th>요청 JSON 차이</th><th>입력 토큰</th><th>캐시 히트</th><th>새로 계산</th><th>출력 토큰</th><th><code>stop_reason</code></th></tr></thead><tbody><tr><td>1. 그럼 수박은?</td><td>6편 요청에 첫 답과 질문 1 추가</td><td>27</td><td>19</td><td>8</td><td>4</td><td><code>end_turn</code></td></tr><tr><td>2. 그럼 왜 채소라고도 해?</td><td>1번 요청에 답 1과 질문 2 추가</td><td>41</td><td>30</td><td>11</td><td>6</td><td><code>end_turn</code></td></tr><tr><td>3. 자세히 설명해줘</td><td>2번 요청에 답 2와 질문 3 추가, <code>max_tokens</code>를 8로</td><td>54</td><td>46</td><td>8</td><td>8</td><td><code>max_tokens</code></td></tr></tbody></table>
+<p>캐시 히트는 직전 요청의 입력 토큰 수에 직전 답의 토큰 수(<code>&#x3C;EOS></code> 제외)를 더한 값이고, 새로 계산 열은 입력 토큰에서 캐시 히트를 뺀 값이다. 출력 토큰 수에는 <code>&#x3C;EOS></code>도 포함한다. 실제 엔진은 토큰 여러 개를 묶은 블록 단위(vLLM 기본 16토큰)로만 히트하므로 히트 수는 이보다 적을 수 있다. 여기서는 블록 단위를 무시하고 토큰 단위로 셌다(더 깊이 참고).</p>
+<p><strong>질문 1: 같은 앞부분은 다시 계산하지 않는다.</strong> 요청 1의 입력 27개 가운데 위치 0~18은 6편 요청이 이미 계산한 토큰과 ID가 똑같다. 여기서부터는 vLLM 같은 일반적인 서빙 엔진 기준이다. 6편 11단계에서 요청이 끝나면 <a href="/notes/llm-inference/05-faster-repetition/">KV 캐시</a> 메모리를 비운다고 했다. 요청 사이에서 계산을 재사용하는 엔진은 그 메모리를 다른 요청이 쓸 수 있게 내놓되, 실제로 다른 요청이 그 자리를 쓰기 전까지는 내용을 지우지 않는다. 그래서 새 요청의 앞부분이 남아 있는 토큰과 같으면 그 값을 그대로 가져다 쓰고, <a href="/notes/llm-inference/05-faster-repetition/">prefill</a>에서는 위치 19~26의 8개만 계산한다. 이렇게 요청끼리 같은 앞부분의 KV 캐시를 재사용하는 것을 prefix 캐시라고 한다. prefill이 짧아지므로 첫 토큰이 빨리 나온다.</p>
+<p><strong>질문 2: 다시 계산하지 않아도 참고는 한다.</strong> <code>그럼 왜 채소라고도 해?</code>에는 무엇이 채소라는 건지가 없다. 모델은 앞 대화에서 그것을 찾는다. 아래는 <a href="/notes/llm-inference/03-mixing-context/">어텐션</a>에서 위치 34 <code>채소</code>가 앞 위치를 참고하는 비율의 한 예다.</p>
+<pre><code class="language-text">위치 34 "채소"가 참고하는 비율 (어느 레이어의 한 예, 가상 값)
+
+위치 22 수박 (질문 1)          0.15  ###
+위치 27 수박 (답 1)            0.25  #####
+위치 29 과일입니다. (답 1)     0.35  #######
+위치 32 그럼                   0.05  #
+위치 34 채소 (자기 자신)       0.10  ##
+나머지 30개 위치               0.10  ##
+                              -----
+합계                           1.00
+</code></pre>
+<p><code>채소</code>는 앞 답의 <code>수박</code>과 <code>과일입니다.</code>를 가장 많이 참고한다. 위치 32 <code>그럼</code>도 앞 답을 받아 이어 묻는 말이라, <code>그럼</code> 자신을 계산할 때 위치 27 <code>수박</code>과 29 <code>과일입니다.</code>를 참고한다. 위치 27~29는 이번 요청에서 캐시 히트로 계산을 건너뛴 자리다. 계산만 건너뛸 뿐, 어텐션은 캐시에서 꺼낸 값을 새로 계산한 값과 똑같이 섞는다.</p>
+<p><strong>질문 3: 답이 길어지면 캐시도 커진다.</strong> <code>자세히 설명해줘</code>에서는 예시를 짧게 하려고 요청의 <code>max_tokens</code>를 8로 줄였다. <code>max_tokens</code>는 토큰으로 바뀌어 입력에 들어가는 값이 아니라서, 바꿔도 캐시 히트에는 영향이 없다.</p>
+<pre><code class="language-text">prefill   위치 46~53 계산 (0~45는 캐시에서)   -> 수박       캐시 54
+decode 1  위치 54 수박                        -> 은         캐시 55
+decode 2  위치 55 은                          -> 밭         캐시 56
+...
+decode 7  위치 60 식물                        -> 이라       캐시 61
+출력이 max_tokens 8개에 도달해 멈춘다          stop_reason: "max_tokens"
+</code></pre>
+<p><a href="/notes/llm-inference/05-faster-repetition/">decode</a>마다 캐시가 한 토큰씩 늘어 61개가 된다. 마지막에 고른 <code>이라</code>는 <code>&#x3C;EOS></code>처럼 입력에 다시 붙지 않아 캐시에 들어가지 않는다. 답은 <code>수박은 밭에서 자라는 한해살이 식물이라</code>에서 끊기고, <code>stop_reason</code>은 <code>max_tokens</code>다. 6편 요청이 끝날 때 캐시는 19개였는데, 대화가 세 번 이어지자 요청 하나의 캐시가 61개로 늘었다.</p>
+<p><strong>시스템 지침에 현재 시각을 넣으면 손해인 이유.</strong> prefix 캐시는 요청 맨 앞부터 토큰 ID가 완전히 같은 구간까지만 히트한다. 3편에서 본 것처럼 각 위치의 값은 자기와 그 앞 토큰 전부를 섞어 만든다. 그래서 중간에 한 토큰만 달라도 그 뒤 위치의 값은 모두 달라진다. 시스템 지침 끝에 <code>현재 시각 14:03</code>처럼 보내는 시각을 붙인다고 하자. 질문 2를 14:03에, 질문 3을 14:05에 보내면 이렇다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>위치</th><th>질문 2 요청 (14:03)</th><th>질문 3 요청 (14:05)</th><th>캐시</th></tr></thead><tbody><tr><td>0~6</td><td><code>&#x3C;system></code> … <code>.</code></td><td>같음</td><td>히트</td></tr><tr><td>7~10</td><td><code>현재</code> <code>시각</code> <code>14</code> <code>:</code></td><td>같음</td><td>히트</td></tr><tr><td>11</td><td><code>03</code></td><td><code>05</code></td><td>미스</td></tr><tr><td>12 이후</td><td><code>&#x3C;/system></code>부터 앞 대화</td><td>앞 대화 토큰은 같음</td><td>미스</td></tr></tbody></table>
+<p>시각 토큰 5개가 늘어 질문 3의 입력은 59개다(가상 값). 시각이 없으면 질문 3은 8개만 계산하면 되는데, 시각이 바뀌어서 위치 11~58의 48개를 다시 계산한다. 위치 12부터는 토큰이 같아도 앞에 다른 시각을 섞었기 때문에 재사용할 수 없다. 시스템 지침은 모든 요청의 맨 앞에 온다. 여기에 매번 바뀌는 값을 넣으면 요청마다 시각 뒤의 대화 전체를 다시 prefill하고, 대화가 길어질수록 그 양도 늘어난다. 시각이 꼭 필요하면 바뀌지 않는 부분 뒤, 예를 들어 이번 질문 메시지에 넣는다.</p>
+<h2 id="새-용어">새 용어</h2>
+<ul>
+<li><strong>prefix 캐시</strong>: 요청끼리 맨 앞부분의 토큰 ID가 같으면, 앞 요청에서 계산해 둔 그 부분의 KV 캐시를 다음 요청의 prefill에 재사용하는 것. 맨 앞부터 처음 달라지는 토큰 전까지만 히트한다.</li>
+</ul>
+<details id="deeper">
+<summary>더 깊이</summary>
+<p><strong>KV 캐시와 prefix 캐시의 차이.</strong></p>
+<p>둘 다 레이어마다 위치별 K, V를 저장해 두고 다시 쓴다. 다른 것은 어디서 다시 쓰느냐다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>KV 캐시 (<a href="/notes/llm-inference/05-faster-repetition/">5편</a>)</th><th>prefix 캐시</th></tr></thead><tbody><tr><td>재사용 범위</td><td>요청 하나 안</td><td>요청과 요청 사이</td></tr><tr><td>다시 쓰는 때</td><td>decode의 매 단계</td><td>다음 요청의 prefill</td></tr><tr><td>줄어드는 시간</td><td>앞 토큰을 매번 다시 계산하는 시간</td><td>같은 앞부분을 prefill하는 시간</td></tr><tr><td>성립 조건</td><td>조건 없음(늘 쓴다)</td><td>맨 앞부터 토큰 ID가 같아야 한다</td></tr><tr><td>수명</td><td>요청이 끝날 때까지</td><td>메모리가 다른 요청에 쓰여 지워질 때까지</td></tr></tbody></table>
+<p><a href="https://docs.vllm.ai/en/latest/features/automatic_prefix_caching.html">vLLM의 Automatic Prefix Caching 문서</a>도 이 기능이 줄이는 것은 prefill 시간뿐이고, 새 토큰을 만드는 decode 시간은 줄이지 않는다고 적는다. 같은 문서는 효과를 보는 예로 긴 문서에 질문을 거듭하는 경우와 이 글처럼 대화를 여러 번 주고받는 경우를 든다.</p>
+<p><strong>vLLM: 블록 단위로 저장하고 블록 단위로 찾는다.</strong></p>
+<p>vLLM 논문 <a href="https://arxiv.org/abs/2309.06180">Efficient Memory Management for Large Language Model Serving with PagedAttention (Kwon et al., 2023)</a> 4.1절의 PagedAttention은 요청마다 KV 캐시를 정해진 토큰 수의 블록으로 나눠 저장한다. 블록끼리는 GPU 메모리에서 붙어 있지 않아도 된다. 블록 단위로 관리하므로 여러 요청이 같은 블록을 함께 가리킬 수 있다. 같은 논문 4.4절은 시스템 지침처럼 많은 요청이 공유하는 앞부분의 KV 캐시를 미리 저장해 두고, 요청이 그 블록을 가리키게 해서 나머지 부분만 prefill하는 방법을 설명한다. 7.2절에 따르면 vLLM의 기본 블록 크기는 16토큰이다(현재 vLLM 코드의 <a href="https://github.com/vllm-project/vllm/blob/main/vllm/config/cache.py"><code>CacheConfig</code></a>도 <code>DEFAULT_BLOCK_SIZE = 16</code>).</p>
+<p>논문의 방식은 공유할 앞부분을 미리 정해 둬야 한다. vLLM의 Automatic Prefix Caching은 같은 앞부분을 자동으로 찾는다. <a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html">설계 문서</a>에 따르면 블록마다 해시를 만들고, 해시에는 바로 앞 블록의 해시와 이 블록의 토큰이 들어간다(LoRA ID 같은 추가 값도 들어갈 수 있다). 앞 블록의 해시를 이어받으므로 블록 해시가 같으면 그 블록까지의 앞부분 전체가 같다는 뜻이다. 새 요청이 오면 앞 블록부터 해시를 찾아보고, 처음 못 찾는 블록부터 계산한다.</p>
+<p>같은 문서에 따르면 실제 동작은 이 글의 단순화와 두 가지가 다르다.</p>
+<ul>
+<li>가득 찬 블록만 캐시한다. 블록 하나에 토큰이 일부만 찼으면 그 블록은 재사용 대상이 아니다.</li>
+<li>요청이 끝나면 블록을 빈 블록 목록(free list)에 돌려놓지만 해시는 남겨 둔다. 메모리가 모자라면 가장 오래 쓰지 않은 블록부터 지운다(LRU). 지워진 블록은 히트하지 않는다.</li>
+</ul>
+<p>블록 크기 16으로 이 글의 세 질문을 다시 세면 이렇다. 직전 요청이 끝났을 때 캐시에 남은 토큰 가운데 가득 찬 블록만 히트한다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>질문</th><th>직전 요청이 남긴 토큰</th><th>가득 찬 블록</th><th>단순화한 히트</th><th>블록 기준 히트</th><th>블록 기준 새로 계산</th></tr></thead><tbody><tr><td>1</td><td>19 (위치 0~18)</td><td>0~15</td><td>19</td><td>16</td><td>11</td></tr><tr><td>2</td><td>30 (위치 0~29)</td><td>0~15</td><td>30</td><td>16</td><td>25</td></tr><tr><td>3</td><td>46 (위치 0~45)</td><td>0~15, 16~31</td><td>46</td><td>32</td><td>22</td></tr></tbody></table>
+<p>토큰이 이만큼 적으면 블록 하나의 차이도 크게 보인다. 입력이 수천 토큰이면 마지막 블록 하나를 다시 계산해도 전체에서 차지하는 비중이 작다. 캐시는 그 서버의 GPU 메모리에 있으므로 다음 요청이 다른 서버로 가거나 그사이 블록이 지워지면 히트하지 않는다.</p>
+<p><strong>Claude API에서는 요청에서 캐싱을 직접 켠다.</strong></p>
+<p><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Claude 프롬프트 캐싱 문서</a>는 캐싱을 켜는 방법으로 두 가지를 든다. 요청 최상위에 <code>cache_control</code> 필드 하나를 넣는 자동 캐싱과, <code>system</code>이나 메시지 안의 내용 블록(content block)에 <code>cache_control</code>을 직접 붙이는 방법이다. 어느 쪽이든 요청에 <code>cache_control</code>을 넣어야 캐싱이 켜진다. 레거시 Amazon Bedrock 연동은 최상위 필드를 받지 않아서 내용 블록에 붙이는 방법만 쓴다.</p>
+<ul>
+<li>캐시할 수 있는 최소 길이가 모델마다 달라서, 쓰는 모델의 값을 문서 표에서 확인해야 한다. 요청이 최소 길이보다 짧으면 <code>cache_control</code>을 넣어도 에러 없이 캐시하지 않고 처리한다. 이 글의 예시 대화는 표에 있는 어느 모델의 최소 길이보다도 짧아서 히트가 나지 않는다.</li>
+<li>캐시는 <code>tools</code>, <code>system</code>, <code>messages</code> 순서로 이어 붙인 앞부분이 100% 같아야 히트한다. 문서도 앞쪽 항목이 바뀌면 그 항목과 뒤 항목의 캐시가 모두 무효가 된다고 설명한다.</li>
+<li>캐시는 기본 5분 동안 유지되고, 캐시를 쓸 때마다 추가 비용 없이 시간이 갱신된다. 추가 비용을 내고 1시간으로 늘리는 옵션도 있다.</li>
+</ul>
+<p>캐시가 쓰였는지는 응답의 <code>usage</code>로 확인한다. <code>cache_creation_input_tokens</code>는 이번 요청에서 새로 캐시에 쓴 토큰 수, <code>cache_read_input_tokens</code>는 캐시에서 읽은 토큰 수다. <code>input_tokens</code>는 캐시에 쓰지도 읽지도 않은 토큰 수만 센다. 그래서 전체 입력 토큰은 셋을 더해야 나온다. 아래는 긴 시스템 지침을 캐시에서 읽은 요청의 응답 예다(가상 값).</p>
+<pre><code class="language-json">"usage": {
+  "input_tokens": 50,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 2000,
+  "output_tokens": 120
+}
+</code></pre>
+<p>이 요청의 전체 입력은 50 + 0 + 2,000 = 2,050토큰이다. 문서는 두 캐시 필드가 모두 0이면 캐시되지 않은 것이고, 대개 최소 길이를 채우지 못한 경우라고 설명한다. 문서가 다루는 것은 API 사용법이고, Claude 서버 내부에서 캐시를 어떻게 구현하는지는 공개되어 있지 않다.</p>
+</details></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/llm-inference/06-one-request/" rel="prev"><span>&larr; 이전 편</span><strong>실제 요청 하나를 끝까지 따라가기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>

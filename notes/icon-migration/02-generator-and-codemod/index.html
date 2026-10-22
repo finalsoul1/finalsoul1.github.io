@@ -1,0 +1,166 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="아이콘 모듈은 생성기가 만들고 사용처는 codemod가 바꿨다. 두 도구가 SVG 파일명에서 같은 규칙으로 컴포넌트 이름을 만들게 해서 서로 어긋날 수 없게 했다."><title>생성기와 codemod로 사용처 880곳 옮기기 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="생성기와 codemod로 사용처 880곳 옮기기"><meta property="og:description" content="아이콘 모듈은 생성기가 만들고 사용처는 codemod가 바꿨다. 두 도구가 SVG 파일명에서 같은 규칙으로 컴포넌트 이름을 만들게 해서 서로 어긋날 수 없게 했다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/icon-migration/02-generator-and-codemod/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg" type="image/svg+xml"><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C51aazlg.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden>검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">아이콘 구조 개선 / 02-04</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#생성기-svg-하나에서-컴포넌트-하나">생성기: SVG 하나에서 컴포넌트 하나</a><a href="#생성-결과가-매번-같아야-한다">생성 결과가 매번 같아야 한다</a><a href="#codemod-컴파일러-api로-jsx-바꾸기">codemod: 컴파일러 API로 JSX 바꾸기</a><a href="#상위-5종부터">상위 5종부터</a><a href="#codemod가-조용히-놓친-것">codemod가 조용히 놓친 것</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 02 / 2026.10.21</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="생성기와 codemod로 사용처 880곳 옮기기">생성기와 codemod로 사용처 880곳 옮기기<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="지난-편">지난 편</h2>
+<p>아이콘 198개가 이름 문자열로 꺼내 쓰는 객체 하나에 묶여 있어서 모든 화면에 실렸다. 아이콘 하나를 모듈 하나로 나누고 사용처가 직접 import하게 바꾸기로 했고, 먼저 타입 검사를 우회하던 캐스팅을 없앴다.</p>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>아이콘 모듈은 생성기가 만들고 사용처는 codemod가 바꿨다. 두 도구가 SVG 파일명에서 같은 규칙으로 컴포넌트 이름을 만들게 해서 서로 어긋날 수 없게 했다.</p>
+<h2 id="생성기-svg-하나에서-컴포넌트-하나">생성기: SVG 하나에서 컴포넌트 하나</h2>
+<p>SVG 파일명에는 아이콘 이름과 variant가 들어 있다. <code>-</code> 앞이 이름이고 뒤가 variant다. 생성기는 이것을 PascalCase로 이어 쓰고 끝에 <code>Icon</code>을 붙인다.</p>
+<pre><code class="language-text">chevronLeft.svg               -> ChevronLeftIcon
+arrowDown-thick.svg           -> ArrowDownThickIcon
+chevronRight-tight-small.svg  -> ChevronRightTightSmallIcon
+</code></pre>
+<p>이 규칙은 디자인 파일의 아이콘 이름 체계와도 같다. 디자인 파일의 variant 이름이 <code>Name=chevronDownThick</code>처럼 이미 코드 식별자 모양이었다. 그래서 나중에 디자인 파일에서 아이콘을 직접 가져오게 될 때도 이 이름을 그대로 쓸 수 있다(<a href="/notes/icon-migration/04-figma-sync/">4편</a>).</p>
+<p>생성되는 모듈은 이렇다.</p>
+<pre><code class="language-tsx">import ArrowDownThickSvg from '../assets/arrowDown-thick.svg'
+import type { SvgIconProps } from '../icon.props'
+
+export const ArrowDownThickIcon = ({ className, ...props }: SvgIconProps) => (
+  &#x3C;ArrowDownThickSvg className={cn('icon fill-current', className)} {...props} />
+)
+</code></pre>
+<p>짧은 코드지만 지켜야 할 규칙이 네 가지 들어 있다.</p>
+<ul>
+<li><strong>기존 <code>Icon</code>과 같은 클래스를 같은 순서로 붙인다.</strong> <code>icon</code> 클래스는 다른 컴포넌트가 하위(descendant) 셀렉터로 참조한다. 빠지거나 순서가 바뀌면 화면이 조용히 달라진다.</li>
+<li><strong>SVG를 문자열로 붙여 넣지 않고 import한다.</strong> 기존 SVGR과 svgo 처리를 그대로 거친다.</li>
+<li><strong>팩토리 함수 호출이 아니라 컴포넌트 선언이다.</strong> <code>createIcon(Svg)</code>처럼 모듈 최상위에서 함수를 호출하면, 번들러가 그 호출에 부수효과가 있을 수 있다고 보고 모듈을 남길 수 있다.</li>
+<li><strong>props 타입을 별도 파일에 둔다.</strong> 기존 타입 파일은 <code>typeof iconMap</code>에서 타입을 파생한다. 생성 모듈이 그 파일을 import하면 198개를 다시 끌고 온다. 그래서 <code>SvgIconProps = SVGProps&#x3C;SVGSVGElement></code> 한 줄짜리 파일을 따로 만들었다.</li>
+</ul>
+<h2 id="생성-결과가-매번-같아야-한다">생성 결과가 매번 같아야 한다</h2>
+<p>생성물을 커밋해 두고 CI에서 “SVG와 생성물이 맞는지”를 검사하려면, 같은 입력에서 항상 같은 출력이 나와야 한다. 기존 <code>iconMap</code> 생성기는 이 조건을 못 지키고 있었다.</p>
+<p><strong>포매터.</strong> 기존 생성기를 다시 돌리면 커밋된 파일과 204줄이 달랐다. 커밋된 파일은 pre-commit 훅에서 prettier를 거친 결과였고, 생성기 출력은 그 전 모양이었기 때문이다. 대부분은 import 정렬 플러그인이 순서를 바꾼 탓이었다. 생성기가 prettier를 직접 호출하게 바꾸자 기존 파일과 바이트 단위로 일치했다.</p>
+<p><strong>파일 순서.</strong> <code>readdir</code> 결과의 순서는 운영체제와 파일 시스템에 따라 다를 수 있다. 정렬하지 않으면 <code>iconMap</code>의 키 순서가 로컬에서는 맞고 CI에서만 달라진다. 결과를 정렬했다.</p>
+<p><strong>이름 충돌.</strong> <code>arrowDown-thick.svg</code>와 <code>arrowDownThick.svg</code>는 둘 다 <code>ArrowDownThickIcon</code>이 된다. 또 macOS와 Windows의 기본 파일 시스템은 대소문자를 구분하지 않아 <code>AI.tsx</code>와 <code>ai.tsx</code>가 서로를 덮어쓴다. 컴포넌트 이름이 겹치거나 파일명을 소문자로 바꾼 값이 겹치면 생성을 멈추게 했다.</p>
+<p>이렇게 고친 뒤 <code>--check</code> 모드를 넣었다. 이 모드는 파일을 쓰지 않고 기대 출력과 디스크의 파일을 비교한다. 빠진 파일, 내용이 다른 파일, 생성 대상이 아닌데 남아 있는 파일을 출력하고 exit 1로 끝난다. CI에는 새 job을 만들지 않고 기존 lint job에 한 줄을 추가했다. SVG를 추가하거나 지우거나 생성물을 손으로 고치는 세 경우 모두 검사가 실패하는 것을 확인했다.</p>
+<h3 id="번들이-그대로인지-확인하기">번들이 그대로인지 확인하기</h3>
+<p>이 단계는 새 파일만 추가하고 기존 경로는 건드리지 않는다. 그러니 앱 빌드 결과가 한 바이트도 달라지면 안 된다. 바뀌기 전과 후를 빌드해 산출물 15,262개 파일의 sha256을 비교했고, 차이는 0이었다.</p>
+<p>처음 비교했을 때는 2,396개가 달랐다. 원인은 빌드 캐시였다. 한쪽은 캐시 없이, 다른 쪽은 캐시가 있는 상태로 빌드했던 것이다. 같은 캐시 조건으로 맞추자 차이가 사라졌다. 빌드 결과는 코드 말고 캐시 같은 조건에도 달라진다는 것을 이때 다시 확인했다.</p>
+<h2 id="codemod-컴파일러-api로-jsx-바꾸기">codemod: 컴파일러 API로 JSX 바꾸기</h2>
+<p>생성 모듈이 생겼으니 이제 사용처를 바꿀 차례였다. 당시 <code>&#x3C;Icon></code> 호출은 876건이었다. 손으로 옮기면 <code>default</code>, <code>thick</code>, <code>small</code>, <code>tight</code>와 <code>fill</code>, <code>outlined</code>가 섞인 variant를 어딘가에서 틀리게 된다. 그래서 codemod를 만들었다.</p>
+<p>도구는 jscodeshift나 ts-morph가 아니라 이미 루트에 있는 <code>typescript</code> 패키지의 컴파일러 API를 썼다. codemod는 로컬에서 몇 번 돌리고 끝낼 도구인데, devDependency를 추가하면 CI에도 매번 설치되기 때문이다. 새 의존성은 0개였다.</p>
+<p>codemod가 하는 일은 다음과 같다.</p>
+<ol>
+<li>
+<p><strong>이름 표를 SVG에서 만든다.</strong> <code>name</code>과 <code>variant</code>를 컴포넌트 이름으로 바꾸는 표를 손으로 쓰지 않고, 생성기와 같은 규칙으로 SVG 파일명에서 만든다. 그래서 생성기와 어긋날 수 없다.</p>
+</li>
+<li>
+<p><strong>진짜 <code>Icon</code>만 찾는다.</strong> import 구문을 보고, DS의 아이콘 경로에서 온 <code>Icon</code>의 지역 이름만 모은다. <code>import { Icon as DsIcon }</code> 같은 별칭도 따라가고, 이름만 같은 다른 컴포넌트는 건드리지 않는다.</p>
+</li>
+<li>
+<p><strong>나머지 속성은 원문을 잘라 붙인다.</strong> <code>name</code>과 <code>variant</code>만 빼고 <code>className</code>이나 이벤트 핸들러는 소스 텍스트 그대로 옮긴다. 표현식을 다시 만들면 의미나 주석이 바뀔 수 있기 때문이다.</p>
+</li>
+<li>
+<p><strong>variant가 삼항이면 엘리먼트 삼항으로 펼친다.</strong></p>
+<pre><code class="language-tsx">// 전
+&#x3C;Icon name="chevronRight" variant={size === 'large' ? 'thick' : 'tight-small'} className={iconClass} />
+// 후
+size === 'large' ? (
+  &#x3C;ChevronRightThickIcon className={iconClass} />
+) : (
+  &#x3C;ChevronRightTightSmallIcon className={iconClass} />
+)
+</code></pre>
+</li>
+<li>
+<p><strong>import를 정리한다.</strong> 그 파일에서 <code>Icon</code>을 더 쓰지 않으면 import에서 지운다. 단, JSX 태그 밖에서 <code>Icon</code>을 값으로 쓰는 곳(<code>createElement(Icon, ...)</code> 등)이 있으면 지우지 않는다. 새 아이콘은 파일 단위 경로로 import한다. 모든 아이콘을 다시 내보내는 배럴 파일로 import하면 198개를 함께 끌고 올 수 있기 때문이다.</p>
+</li>
+<li>
+<p><strong>prettier를 돌린다.</strong> 출력이 pre-commit 포매팅과 어긋나지 않게 한다.</p>
+</li>
+</ol>
+<p><code>--targets</code>로 바꿀 아이콘을 지정할 수 있게 해서, 3단계에서는 상위 5종만, 4단계에서는 나머지를 같은 도구로 바꿨다. 바꾼 뒤 한 번 더 돌려도 바뀌는 곳이 없는 것(멱등)도 확인했다.</p>
+<h2 id="상위-5종부터">상위 5종부터</h2>
+<p>876건 중 <code>chevronLeft</code> 하나가 277건이었고, 상위 5종을 합치면 508건(58%)이었다. 3단계에서 이 5종을 파일 383개에 걸쳐 먼저 바꿨다. 남은 약 370건은 4단계에서 같은 codemod로 대부분 바꾸고 나머지는 손으로 옮겼다.</p>
+<h3 id="포매터-노이즈는-따로-커밋했다">포매터 노이즈는 따로 커밋했다</h3>
+<p>바꿀 파일 383개 중 264개가 이미 import 정렬 규칙에 어긋나 있었다. codemod가 prettier를 돌리면 이 정렬 변경이 실제 전환과 섞여서 diff가 <code>+1415 / -1766</code>이 된다.</p>
+<p>그래서 대상 파일에 prettier만 적용한 <code>style:</code> 커밋을 먼저 쌓고, 그 위에 codemod 추가 커밋과 전환 커밋을 올렸다. 리뷰어는 뒤의 커밋만 보면 된다. 이후 단계에서도 MR마다 “포맷 정리, 도구, 기계적 전환, 수동 전환, 버그 수정” 순서로 커밋을 나눴다.</p>
+<h2 id="codemod가-조용히-놓친-것">codemod가 조용히 놓친 것</h2>
+<p>codemod는 바꾸지 못한 곳을 <code>파일:줄 - 사유</code>로 보고하게 만들었다. 그런데 보고에서 빠지는 경우가 있었다.</p>
+<ul>
+<li><strong>이름이 삼항인 경우.</strong> 삼항 처리는 <code>variant</code>만 고려했다. <code>name</code>이 문자열 리터럴이 아니면 사유 없이 넘어가서 건너뛴 목록에도 안 나왔다. dry-run 결과로는 손으로 옮길 곳이 4곳이었는데 실제로는 14곳이었다.</li>
+<li><strong>이미 import한 아이콘을 또 넣는 경우.</strong> 같은 아이콘을 이미 쓰던 파일에 같은 import를 한 번 더 넣었다. prettier가 둘을 import 문 하나로 합치면서 <code>Identifier has already been declared</code> 에러가 났다.</li>
+<li><strong>JSX 안의 중괄호.</strong> <code>{cond &#x26;&#x26; (&#x3C;Icon />)}</code>를 <code>{cond &#x26;&#x26; ({a ? &#x3C;X /> : &#x3C;Y />})}</code>로 바꾸면 안쪽 <code>{</code>가 객체 리터럴로 읽힌다. <code>{cond &#x26;&#x26; (a ? &#x3C;X /> : &#x3C;Y />)}</code>로 써야 한다.</li>
+<li><strong><code>createElement(Icon)</code>.</strong> JSX가 아니어서 codemod가 보지 않는 자리였다. 별도 리뷰에서 발견해 손으로 옮겼다.</li>
+</ul>
+<p>두 번째와 세 번째는 빌드 에러로, 네 번째는 리뷰에서 바로 드러났다. 위험한 것은 첫 번째처럼 보고 없이 지나가는 경우였다. 도구가 “몇 건 남았다”고 말하면 그 숫자가 맞는지 한 번은 직접 세어 보는 편이 낫다.</p>
+<h2 id="다음-편">다음 편</h2>
+<p><a href="/notes/icon-migration/03-surprises-and-results/">3편</a>은 전환 중에 생긴 예상 밖 번들 비용, 처음 만든 번들 검사가 회귀를 놓친 이유, 최종 결과를 다룬다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/icon-migration/01-why-all-icons-loaded/" rel="prev"><span>&larr; 이전 편</span><strong>아이콘 198개가 모든 화면에 실리던 이유</strong></a><a class="note-pager-next" href="/notes/icon-migration/03-surprises-and-results/" rel="next"><span>다음 편 &rarr;</span><strong>예상 밖 비용, 번들 검사가 놓친 회귀, 전환 결과</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>
