@@ -1,4 +1,4 @@
-# 권병준 경력기술서
+# 권병준 프로필
 
 https://finalsoul1.github.io/
 

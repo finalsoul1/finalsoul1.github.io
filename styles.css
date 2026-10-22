@@ -30,6 +30,7 @@ img { max-width:100%; }
 .resume-intro > p { margin:6px 0 26px; font-size:21px; font-weight:700; }
 .resume-contact { display:flex; gap:18px; flex-wrap:wrap; font-family:var(--mono); font-size:11px; }
 .resume-contact a { text-decoration:underline; }
+.resume-intro > .resume-request { margin:12px 0 0; font-size:13px; font-weight:400; color:var(--muted); }
 .resume-block { display:grid; grid-template-columns:155px 1fr; gap:35px; border-bottom:1px solid var(--rule); padding:31px 0; }
 .resume-block h2 { margin:0; font-size:16px; letter-spacing:-.04em; }
 .resume-block p { margin:0; line-height:1.75; font-size:14px; word-break:keep-all; }
