@@ -1,7 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap');
 :root { --paper:#f3efe5; --ink:#171714; --orange:#ff6748; --lime:#e7ff62; --page:#dedbd1; --sheet:#fffefa; --sheet-border:#b7b3a8; --rule:#c9c5bc; --rule-light:#e0dcd3; --muted:#68665f; --orange-dark:#c64b30; --line:2px solid var(--ink); --mono:'DM Mono',monospace; --sans:'DM Sans','Noto Sans KR',sans-serif; }
-* { box-sizing:border-box; }
-html { scroll-behavior:smooth; }
+* { box-sizing:border-box; scrollbar-color:var(--sheet-border) #eeebe3; scrollbar-width:thin; }
+*::-webkit-scrollbar { width:10px; height:10px; }
+*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner { background:#eeebe3; }
+*::-webkit-scrollbar-thumb { border:2px solid #eeebe3; border-radius:999px; background:var(--sheet-border); }
+*::-webkit-scrollbar-thumb:hover { background:var(--orange); }
+html { scroll-behavior:smooth; scrollbar-gutter:stable; }
 body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); }
 a { color:inherit; text-decoration:none; }
 button { font:inherit; }
@@ -48,6 +52,9 @@ img { max-width:100%; }
   .site-header { height:auto; flex-wrap:wrap; }
   .brand { min-height:72px; }
 }
+@media (max-width:800px) {
+  .resume-actions .shortcut-help-toggle,.shortcut-guide { display:none; }
+}
 @media (max-width:650px) {
   .brand { width:100%; }
   .footer { padding:65px 5vw 0; }
@@ -79,6 +86,8 @@ img { max-width:100%; }
 .resume-actions a,.resume-actions button { display:flex; align-items:center; justify-content:center; gap:10px; min-width:112px; padding:0 20px; border:0; border-right:var(--line); background:transparent; color:var(--ink); font-family:var(--mono); font-size:11px; font-weight:500; letter-spacing:.04em; cursor:pointer; }
 .resume-actions a:hover,.resume-actions button:hover { background:var(--orange); }
 .resume-actions button { min-width:135px; border-right:0; background:var(--lime); }
+.resume-actions .shortcut-help-toggle { min-width:58px; border-right:var(--line); background:var(--sheet); font-size:14px; font-weight:700; }
+.resume-actions .shortcut-help-toggle[aria-expanded="true"] { background:var(--lime); }
 .resume-actions a.resume-notes { background:var(--ink); color:var(--paper); }
 .resume-actions a.resume-notes:hover { background:var(--orange); color:var(--ink); }
 .resume-toc { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:22px; }
@@ -86,6 +95,13 @@ img { max-width:100%; }
 .resume-toc div { display:flex; flex-wrap:wrap; gap:8px 22px; }
 .resume-toc a { border-bottom:1px solid currentColor; padding-bottom:3px; font-size:12px; font-weight:700; }
 .resume-toc a:hover { color:var(--orange-dark); }
+.shortcut-guide { display:flex; align-items:center; gap:20px; border-bottom:var(--line); padding:10px 4vw; background:var(--lime); }
+.shortcut-guide[hidden] { display:none; }
+.shortcut-guide strong { font-family:var(--mono); font-size:11px; letter-spacing:.08em; white-space:nowrap; }
+.shortcut-guide ul { display:flex; flex:1; flex-wrap:wrap; gap:7px 18px; margin:0; padding:0; list-style:none; }
+.shortcut-guide li { display:inline-flex; align-items:center; gap:6px; font-size:11px; white-space:nowrap; }
+.shortcut-guide kbd { min-width:26px; border:1px solid var(--ink); border-bottom-width:2px; padding:3px 6px; background:var(--sheet); font-family:var(--mono); font-size:10px; text-align:center; }
+.shortcut-guide > button { border:0; border-bottom:1px solid currentColor; padding:3px 0; background:transparent; font-family:var(--mono); font-size:10px; cursor:pointer; }
 @media (max-width:650px) {
   .resume-actions { width:100%; border-left:0; border-top:var(--line); }
   .resume-actions a,.resume-actions button { flex:1; min-width:0; padding:0 10px; min-height:50px; }
@@ -93,7 +109,7 @@ img { max-width:100%; }
   .resume-toc div { margin-top:12px; }
 }
 @media print {
-  .resume-toc { display:none; }
+  .resume-toc,.shortcut-guide { display:none; }
 }
 .resume-summary { margin:0 0 18px !important; font-weight:600; }
 .resume-introduction p + p { margin-top:12px; }

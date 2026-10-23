@@ -5,34 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f3efe5" />
     <meta name="description" content="8년차 프런트엔드 개발자 권병준의 프로필. 커머스, HR SaaS, 증권 서비스에서 대량 데이터 화면, 여러 팀의 기능 연동, 개발 절차와 검증 체계를 다뤄 옴." />
+
     <title>권병준 | 프런트엔드 개발자 프로필</title>
-    <link rel="canonical" href="https://finalsoul1.github.io/resume.html" />
+    <link rel="canonical" href="https://albangk.com/" />
     <meta property="og:type" content="profile" />
     <meta property="og:locale" content="ko_KR" />
     <meta property="og:site_name" content="권병준 프로필" />
     <meta property="og:title" content="권병준 | 프런트엔드 개발자 프로필" />
     <meta property="og:description" content="8년차 프런트엔드 개발자 권병준의 프로필. 커머스, HR SaaS, 증권 서비스에서 대량 데이터 화면, 여러 팀의 기능 연동, 개발 절차와 검증 체계를 다뤄 옴." />
-    <meta property="og:url" content="https://finalsoul1.github.io/resume.html" />
-    <meta property="og:image" content="https://finalsoul1.github.io/og.png" />
+    <meta property="og:url" content="https://albangk.com/" />
+    <meta property="og:image" content="https://albangk.com/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="권병준 프런트엔드 개발자 프로필" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="resume-page">
     <a class="skip-link" href="#main">본문으로 건너뛰기</a>
     <header class="site-header">
-      <a class="brand" href="resume.html" aria-label="권병준 프로필 처음으로">
+      <a class="brand" href="/" aria-label="권병준 프로필 처음으로">
         <span class="brand-mark">FE</span>
         <span>권병준 <small>FRONTEND DEVELOPER</small></span>
       </a>
       <div class="resume-actions">
         <a href="mailto:finalsoul1@gmail.com">이메일 <span aria-hidden="true">&nearr;</span></a>
-        <a class="resume-notes" href="notes/">Notes <span aria-hidden="true">&nearr;</span></a>
+        <a class="resume-notes" href="/notes/">Notes <span aria-hidden="true">&nearr;</span></a>
+        <button class="shortcut-help-toggle" type="button" aria-label="단축키 안내 열기" aria-controls="shortcut-guide" aria-expanded="false" aria-keyshortcuts="?" title="단축키 안내 (?)" data-shortcut-help-toggle>?</button>
         <button type="button" onclick="window.print()">PDF 저장 <span aria-hidden="true">&nearr;</span></button>
       </div>
     </header>
+    <section class="shortcut-guide" id="shortcut-guide" aria-label="단축키 안내" hidden data-shortcut-guide>
+      <strong>단축키</strong>
+      <ul>
+        <li><kbd>?</kbd><span>안내</span></li>
+        <li><kbd>Esc</kbd><span>닫기</span></li>
+        <li><kbd>Home</kbd><span>맨 위</span></li>
+        <li><kbd>End</kbd><span>맨 아래</span></li>
+        <li><kbd>Ctrl/Cmd</kbd><kbd>P</kbd><span>PDF 저장</span></li>
+      </ul>
+      <button type="button" aria-label="단축키 안내 닫기" data-shortcut-guide-close>닫기</button>
+    </section>
 
     <main id="main" class="resume-shell">
       <nav class="resume-toc" aria-label="프로필 목차">
@@ -162,7 +176,7 @@
       <div class="footer-bottom">
         <div class="footer-meta">
           <span>&copy; 2026 권병준 &middot; PROFILE</span>
-          <span>REV 4ba94cd &middot; BUILT 2026.10.23 18:08 KST</span>
+          <span>REV 9b3438a &middot; BUILT 2026.10.23 18:15 KST</span>
           <a href="https://github.com/finalsoul1/finalsoul1.github.io">BUILT FROM JSON &middot; DEPLOYED BY GITHUB ACTIONS &nearr;</a>
         </div>
         <a href="#main">BACK TO TOP &uarr;</a>
@@ -177,6 +191,15 @@
         const footer = document.querySelector(".footer");
         const toggle = nav.querySelector(".scroll-nav-toggle");
         const current = nav.querySelector(".scroll-nav-current");
+        const shortcutGuide = document.querySelector("[data-shortcut-guide]");
+        const shortcutToggle = document.querySelector("[data-shortcut-help-toggle]");
+        const shortcutClose = document.querySelector("[data-shortcut-guide-close]");
+        const setShortcutGuide = (open, returnFocus = false) => {
+          shortcutGuide.hidden = !open;
+          shortcutToggle.setAttribute("aria-expanded", String(open));
+          shortcutToggle.setAttribute("aria-label", open ? "단축키 안내 닫기" : "단축키 안내 열기");
+          if (returnFocus) shortcutToggle.focus();
+        };
         const setOpen = (open) => {
           nav.classList.toggle("is-open", open);
           toggle.setAttribute("aria-expanded", String(open));
@@ -202,9 +225,19 @@
           if (hidden) setOpen(false);
         };
         toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+        shortcutToggle.addEventListener("click", () => setShortcutGuide(shortcutGuide.hidden));
+        shortcutClose.addEventListener("click", () => setShortcutGuide(false, true));
         links.forEach((link) => link.addEventListener("click", () => setOpen(false)));
         document.addEventListener("keydown", (event) => {
-          if (event.key === "Escape") setOpen(false);
+          if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable=true]")) return;
+          if (event.key === "Escape") {
+            setOpen(false);
+            if (!shortcutGuide.hidden) setShortcutGuide(false, true);
+          }
+          if (event.key === "?" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+            event.preventDefault();
+            setShortcutGuide(shortcutGuide.hidden);
+          }
         });
         addEventListener("scroll", () => {
           if (!ticking) {
