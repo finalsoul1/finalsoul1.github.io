@@ -30,8 +30,8 @@
         <span>권병준 <small>FRONTEND DEVELOPER</small></span>
       </a>
       <div class="resume-actions">
-        <a href="mailto:finalsoul1@gmail.com">이메일 <span aria-hidden="true">&nearr;</span></a>
-        <a class="resume-notes" href="/notes/">Notes <span aria-hidden="true">&nearr;</span></a>
+        <a href="mailto:finalsoul1@gmail.com" data-umami-event="contact-email">이메일 <span aria-hidden="true">&nearr;</span></a>
+        <a class="resume-notes" href="/notes/" data-umami-event="profile-to-notes">Notes <span aria-hidden="true">&nearr;</span></a>
         <button class="shortcut-help-toggle" type="button" aria-label="단축키 안내 열기" aria-controls="shortcut-guide" aria-expanded="false" aria-keyshortcuts="?" title="단축키 안내 (?)" data-shortcut-help-toggle>?</button>
         <button type="button" onclick="window.print()">PDF 저장 <span aria-hidden="true">&nearr;</span></button>
       </div>
@@ -65,7 +65,7 @@
           <span class="eyebrow">PROFILE / UPDATED 2026.10.22</span>
           <h1>권병준<span>.</span></h1>
           <p>프런트엔드 개발자</p>
-          <div class="resume-contact"><a href="mailto:finalsoul1@gmail.com">finalsoul1@gmail.com</a> <a class="print-only" href="https://finalsoul1.github.io/" target="_blank" rel="noopener">finalsoul1.github.io</a> <a href="https://www.linkedin.com/in/병준-권-487a731bb" target="_blank" rel="noopener">LinkedIn</a></div>
+          <div class="resume-contact"><a href="mailto:finalsoul1@gmail.com" data-umami-event="contact-email">finalsoul1@gmail.com</a> <a class="print-only" href="https://finalsoul1.github.io/" target="_blank" rel="noopener" data-umami-event="contact-link" data-umami-event-label="finalsoul1.github.io">finalsoul1.github.io</a> <a href="https://www.linkedin.com/in/병준-권-487a731bb" target="_blank" rel="noopener" data-umami-event="contact-link" data-umami-event-label="LinkedIn">LinkedIn</a></div>
           <p class="resume-request">상세 경력기술서는 요청 시 전달드립니다.</p>
         </div>
 
@@ -87,7 +87,7 @@
               <p>모든 화면이 아이콘 198개를 한 묶음으로 받던 구조를 아이콘별 컴포넌트로 바꾸는 생성기와 codemod 구현. WTS 호환을 유지하며 사용처를 단계적으로 전환하고, Figma를 원본으로 삼는 동기화 명령으로 아이콘 추가 절차 자동화.</p>
               <p class="resume-case-result">모든 화면이 받던 아이콘 공유 청크(gzip 약 24KB) 제거</p>
               <p class="resume-case-note">화면별 중복으로 빌드 전체 용량이 약 2.8% 늘어나는 비용은 감수</p>
-              <p class="resume-case-link"><a href="https://albangk.com/notes/icon-migration/01-why-all-icons-loaded/" target="_blank" rel="noopener">작업 과정 연재 보기 (Notes, 4편)</a></p>
+              <p class="resume-case-link"><a href="https://albangk.com/notes/icon-migration/01-why-all-icons-loaded/" target="_blank" rel="noopener" data-umami-event="highlight-link" data-umami-event-label="작업 과정 연재 보기 (Notes, 4편)">작업 과정 연재 보기 (Notes, 4편)</a></p>
             </article>
             <article class="resume-case">
               <span class="resume-case-company">메리츠증권</span>
@@ -176,8 +176,8 @@
       <div class="footer-bottom">
         <div class="footer-meta">
           <span>&copy; 2026 권병준 &middot; PROFILE</span>
-          <span>REV d33e723 &middot; BUILT 2026.10.24 20:07 KST</span>
-          <a href="https://github.com/finalsoul1/finalsoul1.github.io">BUILT FROM JSON &middot; DEPLOYED BY GITHUB ACTIONS &nearr;</a>
+          <span>REV 3430d39 &middot; BUILT 2026.10.27 13:52 KST</span>
+          <a href="https://github.com/finalsoul1/finalsoul1.github.io" data-umami-event="profile-source">BUILT FROM JSON &middot; DEPLOYED BY GITHUB ACTIONS &nearr;</a>
         </div>
         <a href="#main">BACK TO TOP &uarr;</a>
       </div>
@@ -260,6 +260,11 @@
         update();
       })();
     </script>
-    <script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261"></script>
+    <!-- sessionStorage rather than umami.disabled so ?notrack only excludes this tab until it closes. -->
+    <script>
+      if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
+      function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+    </script>
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script>
   </body>
 </html>
