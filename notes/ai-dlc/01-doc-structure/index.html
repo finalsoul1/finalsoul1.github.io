@@ -78,7 +78,7 @@
 <li><strong>AI-DLC</strong>: AWS가 제안한 AI 중심 개발 흐름. 사람이 의도를 정하고, AI가 요구사항, 설계, 작업 단위를 문서로 만든 뒤 구현한다. 단계마다 사람이 확인한다.</li>
 <li><strong>수용조건(AC, Acceptance Criteria)</strong>: 이 동작이면 끝났다고 보는 기준. 테스트 이름에 번호를 붙여 동작과 테스트를 잇기도 한다.</li>
 <li><strong>bolt(B)</strong>: AI-DLC의 작업 단위. 여기서는 커밋 하나에 대응하는 작업으로 쓴다.</li>
-<li><strong>담당 경로</strong>: 기능 README frontmatter에 적는, 그 기능이 맡는 코드 경로 목록.</li>
+<li><strong>담당 경로</strong>: 그 기능이 맡는 코드 경로 목록. 기능 README의 frontmatter에 적는다.</li>
 </ul>
 <details id="deeper">
 <summary>더 깊이</summary>
@@ -139,7 +139,7 @@
 
 <table><thead><tr><th>시점</th><th>README</th><th>decisions</th><th>tickets</th></tr></thead><tbody><tr><td>이슈 시작</td><td>읽기만 한다</td><td>읽고, 판단이 생기면 추가한다</td><td>새로 만든다</td></tr><tr><td>작업마다</td><td>동작을 바꾼 커밋에서 고친다</td><td>판단이 생기면 추가한다</td><td>작업 목록을 체크한다</td></tr><tr><td>이슈가 끝난 뒤</td><td>-</td><td>-</td><td>고치지 않는다</td></tr><tr><td>스펙만 먼저 머지하는 큰 이슈</td><td>구현 MR에서 고친다</td><td>판단이 생기면 추가한다</td><td>먼저 머지한다</td></tr></tbody></table>
 <p>스펙을 먼저 머지할 때 README를 같이 고치면 아직 구현하지 않은 동작이 지금 동작 문서에 들어간다. 그래서 README만 구현 MR로 미룬다.</p>
-<p><strong>번호 규칙.</strong> 새 수용조건과 판단은 <code>ISSUE-2 AC-1</code>, <code>ISSUE-2 D-1</code>처럼 이슈 번호를 붙인다. 두 사람이 같은 기능을 동시에 작업해도 번호가 겹치지 않는다. 작업 번호는 이슈마다 B1부터 시작해 커밋 메시지와 맞춘다. 테스트 이름이 이미 쓰고 있는 기존 <code>AC-n</code>은 그대로 둔다.</p>
+<p><strong>번호 규칙.</strong> 새 수용조건과 판단은 <code>ISSUE-2 AC-1</code>, <code>ISSUE-2 D-1</code>처럼 이슈 번호를 붙인다. 두 사람이 같은 기능을 동시에 작업해도 번호가 겹치지 않는다. 작업 번호는 이슈마다 B1부터 시작해 커밋 메시지와 맞춘다. 테스트 이름에 이미 쓰이고 있는 기존 <code>AC-n</code>은 그대로 둔다.</p>
 <p><strong>폴더 찾기.</strong> README frontmatter에 담당 경로를 적는다.</p>
 <pre><code class="language-yaml">---
 code:
@@ -172,7 +172,7 @@ code:
 
 
 
-<table><thead><tr><th>상황</th><th>어디에 쓰나</th></tr></thead><tbody><tr><td>바꿀 파일이 한 기능의 담당 경로에 속함</td><td>그 기능 폴더</td></tr><tr><td>여러 기능에 걸침</td><td>바꿀 파일이 가장 많은 기능 폴더에 기록 파일 하나. 나머지 기능은 README만 고친다</td></tr><tr><td>어느 담당 경로에도 없음</td><td>사람이 새 기능 폴더 이름을 정한다</td></tr><tr><td>한 기능이 너무 커짐</td><td>같은 층위의 기능 폴더로 나눈다</td></tr></tbody></table>
+<table><thead><tr><th>상황</th><th>어디에 쓰나</th></tr></thead><tbody><tr><td>바꿀 파일이 한 기능의 담당 경로에 속함</td><td>그 기능 폴더에 이어 쓴다</td></tr><tr><td>여러 기능에 걸침</td><td>바꿀 파일이 가장 많은 기능 폴더에 기록 파일을 하나 만들고, 나머지 기능은 README만 고친다</td></tr><tr><td>어느 담당 경로에도 없음</td><td>사람이 새 기능 폴더 이름을 정한다</td></tr><tr><td>한 기능이 너무 커짐</td><td>같은 층위의 기능 폴더로 나눈다</td></tr></tbody></table>
 <p>두 기능이 같은 경로를 맡지 않는지는 문서 빌드에서 검사할 계획이다. 사람이 판단하는 때는 새 기능 폴더 이름을 정할 때와 커진 기능을 나눌 때뿐이다.</p>
 <p><strong>README가 낡지 않게 하기.</strong> 이 구조는 “동작을 바꾼 커밋에서 README도 고친다”는 규칙에 기댄다. 규칙이 지켜지려면 코드를 고치는 쪽이 README가 있다는 걸 알아야 한다. 그런데 지금은 문서가 코드를 가리킬 뿐이고, 코드 파일 쪽에서는 자기 문서가 있는지 알 수 없다.</p>
 <p>코드에 문서 링크 주석을 넣지는 않는다. 담당 경로와 같은 정보를 두 곳에서 관리하게 되고 주석은 쉽게 낡는다. 대신 파일 경로로 담당 README를 찾는 스크립트를 하나 만들고, 아래 장치들이 모두 이 스크립트를 쓴다. 스크립트와 장치는 아직 설계만 했다.</p>

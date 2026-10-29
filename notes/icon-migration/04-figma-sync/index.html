@@ -1,11 +1,11 @@
-<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="디자이너가 내보낸 SVG를 개발자가 손으로 고쳐 넣던 과정을 바꿨다. 이제 디자인 파일의 한 페이지를 원본으로 삼아 스크립트가 아이콘을 가져온다. 사람 기억에만 있던 손질 규칙은 코드로 옮겼고, 스크립트가 판단할 수 없는 것은 멈추지 않고 디자이너에게 물을 목록으로 남겼다."><title>디자인 파일을 아이콘의 원본으로 만들기 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="디자인 파일을 아이콘의 원본으로 만들기"><meta property="og:description" content="디자이너가 내보낸 SVG를 개발자가 손으로 고쳐 넣던 과정을 바꿨다. 이제 디자인 파일의 한 페이지를 원본으로 삼아 스크립트가 아이콘을 가져온다. 사람 기억에만 있던 손질 규칙은 코드로 옮겼고, 스크립트가 판단할 수 없는 것은 멈추지 않고 디자이너에게 물을 목록으로 남겼다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/icon-migration/04-figma-sync/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="디자이너가 내보낸 SVG를 개발자가 손으로 고쳐 넣던 과정을 바꿨다. 이제 디자인 파일의 한 페이지를 원본으로 삼아 스크립트가 아이콘을 가져온다. 사람 기억에만 있던 손질 규칙은 코드로 옮겼고, 스크립트가 판단할 수 없는 아이콘은 멈추지 않고 건너뛴 뒤 디자이너에게 확인할 목록으로 출력하게 했다."><title>디자인 파일을 아이콘의 원본으로 만들기 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="디자인 파일을 아이콘의 원본으로 만들기"><meta property="og:description" content="디자이너가 내보낸 SVG를 개발자가 손으로 고쳐 넣던 과정을 바꿨다. 이제 디자인 파일의 한 페이지를 원본으로 삼아 스크립트가 아이콘을 가져온다. 사람 기억에만 있던 손질 규칙은 코드로 옮겼고, 스크립트가 판단할 수 없는 아이콘은 멈추지 않고 건너뛴 뒤 디자이너에게 확인할 목록으로 출력하게 했다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/icon-migration/04-figma-sync/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
           if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
           function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
         </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C9DTDZbb.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">아이콘 구조 개선 / 04-05</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#손으로-하던-일">손으로 하던 일</a><a href="#먼저-원본이-어디인지-정하기">먼저 원본이 어디인지 정하기</a><a href="#손질-규칙을-코드로">손질 규칙을 코드로</a><a href="#동기화-스크립트">동기화 스크립트</a><a href="#앱-개발자를-위한-다운로드-페이지">앱 개발자를 위한 다운로드 페이지</a><a href="#자동화-대신-스킬">자동화 대신 스킬</a><a href="#남은-일">남은 일</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 04 / 2026.10.21</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="디자인 파일을 아이콘의 원본으로 만들기">디자인 파일을 아이콘의 원본으로 만들기<span>.</span></h1></div><div class="note-body" data-pagefind-body>
 <h2 id="지난-편">지난 편</h2>
 <p>전환을 마치자 거의 모든 화면이 받던 아이콘 묶음 gzip 약 24KB가 사라졌다. 옛 <code>Icon</code>은 다시 쓰지 못하게 import를 lint로 막았고, 옛 파일은 다른 앱이 옮겨 갈 때까지 남겨 뒀다.</p>
 <h2 id="한-줄-결론">한 줄 결론</h2>
-<p>디자이너가 내보낸 SVG를 개발자가 손으로 고쳐 넣던 과정을 바꿨다. 이제 디자인 파일의 한 페이지를 원본으로 삼아 스크립트가 아이콘을 가져온다. 사람 기억에만 있던 손질 규칙은 코드로 옮겼고, 스크립트가 판단할 수 없는 것은 멈추지 않고 디자이너에게 물을 목록으로 남겼다.</p>
+<p>디자이너가 내보낸 SVG를 개발자가 손으로 고쳐 넣던 과정을 바꿨다. 이제 디자인 파일의 한 페이지를 원본으로 삼아 스크립트가 아이콘을 가져온다. 사람 기억에만 있던 손질 규칙은 코드로 옮겼고, 스크립트가 판단할 수 없는 아이콘은 멈추지 않고 건너뛴 뒤 디자이너에게 확인할 목록으로 출력하게 했다.</p>
 <h2 id="손으로-하던-일">손으로 하던 일</h2>
 <p>아이콘을 추가하는 과정은 이랬다. 디자이너가 Figma의 export 영역에서 SVG를 내보내 파일로 넘기면, 개발자가 몇 군데를 고쳐서 저장소에 넣었다. 고치는 내용은 이런 것들이었다.</p>
 <ul>
@@ -16,7 +16,7 @@
 <li>파일명을 <code>이름-variant.svg</code> 규칙에 맞춘다.</li>
 </ul>
 <p>이 규칙은 어디에도 적혀 있지 않았고 해 오던 사람의 기억에만 있었다. 실제로 저장소에는 덜 손질된 파일이 몇 개 남아 있었다.</p>
-<p>손질 규칙 이야기를 처음 들은 것은 2편의 생성기를 만들던 중이었다. 에이전트는 검정 fill을 지우는 처리를 생성기에 바로 넣었는데, 생성기 MR은 “SVG에서 컴포넌트를 만든다”는 일만 하는 MR이었다. 그래서 그 커밋을 빼고 메모로만 남겼다. 구조 전환을 다 끝낸 뒤 이 메모가 별도 작업이 됐다.</p>
+<p>손질 규칙 이야기를 처음 들은 것은 2편의 생성기를 만들던 중이었다. 에이전트는 검정 fill을 지우는 처리를 생성기에 바로 넣었는데, 생성기 MR은 “SVG에서 컴포넌트를 만든다”는 한 가지 일만 다루기로 돼 있었다. 그래서 그 커밋을 빼고 메모로만 남겼다. 구조 전환을 다 끝낸 뒤 이 메모가 별도 작업이 됐다.</p>
 <p>순서에도 이유가 있었다. 아이콘이 하나의 묶음으로 실리던 구조에 동기화부터 붙이면, 디자인 파일에 아이콘이 늘어날수록 모든 화면이 함께 무거워진다. 구조를 먼저 바꿔 두면 아이콘이 늘어도 그 아이콘을 쓰는 화면만 커진다.</p>
 <h2 id="먼저-원본이-어디인지-정하기">먼저 원본이 어디인지 정하기</h2>
 <p>디자인 파일에는 아이콘이 두 군데 있었다. 디자이너가 파일을 내보낼 때 쓰던 export 영역과, Figma 컴포넌트로 묶어 둔 컴포넌트 영역이다. 둘 중 어느 쪽을 원본으로 삼을지 정하려고 저장소 SVG 370개를 두 영역과 비교했다.</p>
@@ -71,7 +71,7 @@
 <li>디스크와 내용이 다른 파일만 쓴다.</li>
 <li>아이콘 생성기와 컬러 아이콘 생성기를 실행한다.</li>
 </ol>
-<p>토큰은 개인 액세스 토큰을 로컬 <code>.env.local</code>에서 읽는다. Figma MCP는 데스크톱 앱에 열린 탭만 읽으므로 스크립트에서 쓸 수 없다. 그래서 REST API를 골랐다.</p>
+<p>인증에는 로컬 <code>.env.local</code>에 둔 개인 액세스 토큰을 쓴다. Figma MCP는 데스크톱 앱에 열린 탭만 읽으므로 스크립트에서 쓸 수 없다. 그래서 REST API를 골랐다.</p>
 <h3 id="멈추지-않고-보류하기">멈추지 않고 보류하기</h3>
 <p>처음 실제로 돌렸을 때 스크립트가 중간에 멈췄다. 같은 이름의 frame이 두 개 있었고, 그림은 서로 달랐다. 어느 쪽이 맞는지는 스크립트가 정할 수 없다.</p>
 <p>그렇다고 문제 하나 때문에 나머지 수백 개를 반영하지 못하면 곤란하다. 그래서 동작을 바꿨다. 판단할 수 없는 아이콘은 빼고 나머지를 반영한 뒤, 끝에 디자이너에게 보낼 확인 요청 문구를 Figma 링크와 함께 출력한다. 보류하는 경우는 이름 규칙 위반, 내보내기 실패, 정리 후에도 남은 위반, 그리고 frame에 배경이 들어간 경우다.</p>
@@ -79,14 +79,14 @@
 <p>스크립트가 일부러 하지 않는 일도 있다.</p>
 <ul>
 <li><strong>이름 변경을 감지하지 않는다.</strong> 이름이 바뀌면 새 이름은 “추가”, 옛 파일은 “코드에만 있음”으로 나온다. 옛 이름을 쓰는 곳을 바꿀지는 사람이 정한다.</li>
-<li><strong>코드에만 있는 파일을 지우지 않는다.</strong> 목록으로 보고만 한다. 디자이너가 알려 준 변경 목록을 넘기면 그것과 대조한다.</li>
+<li><strong>코드에만 있는 파일을 지우지 않는다.</strong> 목록으로 보고만 한다. 디자이너가 알려 준 변경 목록을 넘기면 그 목록과 대조한다.</li>
 </ul>
 <h3 id="첫-동기화는-diff가-크다">첫 동기화는 diff가 크다</h3>
 <p>첫 실행에서는 그림이 같아도 path 좌표 표기가 달라서 diff가 컸다. 이 결과를 기준으로 삼아 한 번 커밋했고, 그 뒤로는 연속으로 돌려도 바뀌는 파일이 0개다. 첫 커밋에서 그림이 실제로 바뀐 41개는 전후를 나란히 그린 비교 시트로 확인했다. 실제 화면에 영향이 있는 것은 그중 일부였다.</p>
 <h2 id="앱-개발자를-위한-다운로드-페이지">앱 개발자를 위한 다운로드 페이지</h2>
 <p>같은 아이콘을 쓰는 모바일 앱은 Flutter로 만들어서 컴포넌트 생성기를 쓰지 않고 SVG 파일을 직접 가져다 쓴다. 처음 요청은 “아이콘 전체를 zip으로 받게 해 달라”였다. 만들다 보니 필요한 건 전체 묶음이 아니라 아이콘 하나를 찾아 받는 일이었다. 그래서 검색 화면에서 하나씩 내려받는 페이지로 방향을 바꾸고, zip 다운로드도 남겨 두었다.</p>
 <p>이 페이지는 Figma가 아니라 저장소의 SVG로 만든다. CI에는 Figma 토큰이 없고, 리뷰를 거치지 않은 디자인 변경이 앱에만 먼저 들어가는 것도 막고 싶었다. 저장소에 머지된 아이콘만 페이지에 나온다.</p>
-<p>첫 실제 요청에서 바로 검색의 문제가 드러났다. 요청 글에 적힌 <code>normal/cicleKRW</code>로 찾으면 결과가 0건이었다. <code>카테고리/이름</code> 형식을 받게 하고, 완전 일치, 앞부분 일치, 부분 일치 순으로 정렬하게 했다. 정확한 결과가 없을 때만 철자가 한두 글자 다른 것을 보여 준다. 검색 라이브러리는 쓰지 않았다.</p>
+<p>첫 실제 요청에서 바로 검색의 문제가 드러났다. 요청 글에 적힌 <code>normal/cicleKRW</code>(<code>circleKRW</code>의 오타)로 찾으면 결과가 0건이었다. <code>카테고리/이름</code> 형식을 받게 하고, 완전 일치, 앞부분 일치, 부분 일치 순으로 정렬하게 했다. 정확한 결과가 없을 때만 철자가 한두 글자 다른 것을 보여 준다. 검색 라이브러리는 쓰지 않았다.</p>
 <h2 id="자동화-대신-스킬">자동화 대신 스킬</h2>
 <p>처음 그린 흐름은 끝까지 자동이었다. 디자이너가 Slack 워크플로로 요청하면 CI가 동기화 MR을 만들고, 머지되면 스레드에 “반영 완료”가 달린다. 하지만 이렇게 하려면 CI용 Figma 토큰(유효 기간 최대 90일), Slack 봇 토큰, 관리자 승인이 필요했다.</p>
 <p>그래서 자동화를 바로 만들지 않고 에이전트 스킬로 절차만 고정했다. 스킬은 이렇게 동작한다.</p>
