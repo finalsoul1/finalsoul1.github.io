@@ -1,0 +1,156 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="에이전트가 틀렸을 때 물어야 할 것은 &quot;어떻게 다시 지시할까&quot;가 아니라 &quot;이 수정을 어느 층에 남길까&quot;다. 코드, 자동 검사, 하네스, 글, 사람 리뷰 순서로 따져 보면 같은 실수를 두 번 고치지 않게 된다."><title>에이전트를 믿게 만드는 역피라미드 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="에이전트를 믿게 만드는 역피라미드"><meta property="og:description" content="에이전트가 틀렸을 때 물어야 할 것은 &quot;어떻게 다시 지시할까&quot;가 아니라 &quot;이 수정을 어느 층에 남길까&quot;다. 코드, 자동 검사, 하네스, 글, 사람 리뷰 순서로 따져 보면 같은 실수를 두 번 고치지 않게 된다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-pyramid/01-inverted-pyramid/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
+          if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
+          function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C9DTDZbb.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">에이전트를 믿게 만드는 환경 / 01-02</span><div><a href="#한-줄-결론">한 줄 결론</a><a href="#들어가며">들어가며</a><a href="#1층-코드베이스를-먼저-고친다">1층. 코드베이스를 먼저 고친다</a><a href="#2층-자동-검사로-걸러낸다">2층. 자동 검사로 걸러낸다</a><a href="#3층-하네스로-강제한다">3층. 하네스로 강제한다</a><a href="#4층-그래도-남는-것만-글로-쓴다">4층. 그래도 남는 것만 글로 쓴다</a><a href="#5층-사람은-마지막에-리뷰한다">5층. 사람은 마지막에 리뷰한다</a><a href="#정리-수정을-남길-층을-고르는-순서">정리: 수정을 남길 층을 고르는 순서</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 01 / 2026.10.23</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="에이전트를 믿게 만드는 역피라미드">에이전트를 믿게 만드는 역피라미드<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>에이전트가 틀렸을 때 물어야 할 것은 “어떻게 다시 지시할까”가 아니라 “이 수정을 어느 층에 남길까”다. 코드, 자동 검사, 하네스, 글, 사람 리뷰 순서로 따져 보면 같은 실수를 두 번 고치지 않게 된다.</p>
+<p><img alt="에이전트를 믿게 만드는 역피라미드. 코드베이스, 자동 검사, 하네스 강제, 글, 사람 리뷰의 다섯 층" loading="lazy" decoding="async" width="2480" height="1984" src="/notes/_astro/inverted-pyramid.CsV2sZhD_24wBOD.webp"></p>
+<h2 id="들어가며">들어가며</h2>
+<p>에이전트가 틀린 코드를 내면 보통 프롬프트를 고치고, AGENTS.md에 규칙을 하나 더 적고, 리뷰를 더 꼼꼼히 한다. 가장 쉽고 빠른 방법이지만 빈틈이 있다. 글로 적은 규칙은 에이전트가 놓칠 수 있고, 리뷰는 사람이 놓칠 수 있다.</p>
+<p>그래서 에이전트를 바로잡는 방법을 역피라미드로 나눠 보았다. 피라미드의 폭은 그 층이 걸러내는 실수의 양이다. 맨 위 코드베이스가 가장 많이 걸러내고, 그 아래로 자동 검사, 하네스 강제, 글이 이어진다. 맨 아래 사람 리뷰까지 내려오는 실수는 가장 적어야 한다. 위층일수록 한 번 막아 두면 같은 실수에 다시 비용이 들지 않으므로, 노력도 위층에 먼저 쓴다.</p>
+<p>에이전트가 틀릴 때마다 이 수정을 어느 층에 남길지부터 묻는다.</p>
+<h2 id="1층-코드베이스를-먼저-고친다">1층. 코드베이스를 먼저 고친다</h2>
+<blockquote>
+<p>에이전트는 이미 있는 코드를 따라 하고, 가장 짧은 길을 고른다.</p>
+</blockquote>
+<ul>
+<li>따라 할 좋은 예시: 에이전트가 고칠 코드 가까이에 본보기가 될 코드를 둔다.</li>
+<li>엄격한 타입과 불변 조건: 잘못된 값은 애초에 만들 수 없게 한다.</li>
+<li>분명한 모듈 경계: 건드리면 안 되는 곳은 구조로 막는다.</li>
+</ul>
+<p>이 층의 목표는 쉬운 길이 곧 올바른 길이 되게 하는 것이다. 실수할 수 있는 길을 코드에서 없애면 같은 문제를 다시 고민할 필요가 없다. 에이전트가 읽어야 할 규칙도 늘지 않으므로 토큰도 가장 적게 든다.</p>
+<p>그런데도 가장 과소평가되는 층이 여기다. 에이전트가 같은 실수를 반복한다면, 그 실수를 허용하는 코드부터 의심해 볼 만하다.</p>
+<h2 id="2층-자동-검사로-걸러낸다">2층. 자동 검사로 걸러낸다</h2>
+<blockquote>
+<p>사람이 보기 전에, 에이전트가 스스로 실패를 알게 만든다.</p>
+</blockquote>
+<ul>
+<li>린트 규칙: 리뷰에서 반복해서 지적하던 패턴을 규칙으로 바꾼다.</li>
+<li>타입체크와 테스트: 모든 변경이 같은 기준을 통과하게 한다.</li>
+<li>빠른 검증 명령 하나: 에이전트가 작업 중에 직접 돌려 볼 수 있는 명령을 둔다.</li>
+</ul>
+<p>검사는 긴 설명을 읽히는 것보다 훨씬 적은 토큰으로 같은 효과를 낸다. 검사가 실패하면 에이전트는 그 자리에서 결과를 보고 스스로 고친다. 판정 기준이 분명해서 왜 실패했는지 설명하기도 쉽다.</p>
+<p>다만 검사는 이미 일어난 실수를 걸러내는 장치다. 실수 자체를 없앨 수 있다면 1층으로 올리는 편이 낫다.</p>
+<h2 id="3층-하네스로-강제한다">3층. 하네스로 강제한다</h2>
+<blockquote>
+<p>코드를 고칠 수 없거나 코드로 막을 일이 아니면, 에이전트가 일하는 환경에서 막는다.</p>
+</blockquote>
+<ul>
+<li>훅: 위험한 명령이나 금지된 파일 수정을 실행 전에 차단한다.</li>
+<li>실행 권한과 샌드박스: 에이전트가 접근할 수 있는 범위를 처음부터 좁혀 둔다.</li>
+<li>되돌릴 수 있는 배포: 잘못된 변경이 나가도 바로 되돌릴 수 있게 한다.</li>
+</ul>
+<p>하네스는 에이전트를 실행하는 도구 쪽 설정이다. Claude Code의 훅과 권한 설정이 여기에 해당한다. 코드베이스를 바꾸지 않고도 매번 같은 결과로 막을 수 있어서 글보다 확실하다. 여러 저장소에 똑같이 적용할 규칙이나 코드 밖의 작업을 막는 규칙은 이 층에 두기 좋다.</p>
+<h2 id="4층-그래도-남는-것만-글로-쓴다">4층. 그래도 남는 것만 글로 쓴다</h2>
+<blockquote>
+<p>강제할 수 없고 에이전트의 판단에 맡겨야 하는 것만 글로 남긴다.</p>
+</blockquote>
+<ul>
+<li>주석: 코드만 보고는 알 수 없는 이유를 적는다.</li>
+<li>AGENTS.md: 프로젝트 전체에 필요한 최소한의 원칙만 둔다.</li>
+<li>스킬: 특히 결과를 어떻게 검증할지 알려 주는 스킬은 꼭 만든다.</li>
+</ul>
+<p>많은 팀이 이 층에 가장 많은 노력을 쏟는다. 하지만 역피라미드에서 글은 아래쪽 좁은 층에 있다. 글은 지켜질 수도 있고 무시될 수도 있기 때문이다.</p>
+<p>AGENTS.md에 규칙을 추가하기 전에, 그 규칙을 타입이나 린트, 훅으로 바꿀 수 없는지 먼저 확인한다.</p>
+<h2 id="5층-사람은-마지막에-리뷰한다">5층. 사람은 마지막에 리뷰한다</h2>
+<blockquote>
+<p>리뷰는 가장 확장하기 어려운 방법이다. 위 네 층이 거르지 못한 것만 사람이 본다.</p>
+</blockquote>
+<ul>
+<li>리뷰할 것: 스펙을 잘못 이해한 구현, 설계 선택과 범위 판단처럼 기계가 판정할 수 없는 것을 본다.</li>
+<li>반복되는 지적은 위층으로: 같은 지적이 다시 나오면 그 지적을 코드, 검사, 하네스, 글 중 한 곳으로 옮긴다.</li>
+<li>리뷰할 힘은 환경 설계에: 다음 PR이 처음부터 옳게 나오도록 환경을 고치는 데 쓴다.</li>
+</ul>
+<p>에이전트가 코드를 올리는 속도를 생각하면 모든 변경을 사람이 꼼꼼히 확인하기는 어렵다. 그래서 사람의 판단은 효과가 가장 큰 곳, 곧 에이전트가 처음부터 옳은 일을 하게 되는 환경을 설계하는 데 쓴다.</p>
+<h2 id="정리-수정을-남길-층을-고르는-순서">정리: 수정을 남길 층을 고르는 순서</h2>
+<p>에이전트의 실수를 발견하면 아래 순서로 묻는다.</p>
+<ol>
+<li>코드로 막을 수 있는가</li>
+<li>검사로 걸러낼 수 있는가</li>
+<li>훅이나 권한으로 막을 수 있는가</li>
+<li>글로 남기면 충분한가</li>
+<li>남은 것만 리뷰에서 확인한다</li>
+</ol>
+<p>지금까지 에이전트를 다루는 일이 지시를 잘 쓰는 일이었다면, 역피라미드는 에이전트가 틀리기 어려운 환경을 만드는 일에 가깝다. 그런 환경이 있어야 에이전트를 믿고 맡길 수 있다.</p>
+<h2 id="다음-편">다음 편</h2>
+<p><a href="/notes/agent-pyramid/02-what-humans-keep/">2편</a>은 맨 아래 사람 리뷰를 다룬다. 에이전트가 코드를 써도 장애가 나면 연락받는 사람으로서 갖춰야 할 기초, 폭, 깊이를 다섯 층에 붙여 본다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a class="note-pager-next" href="/notes/agent-pyramid/02-what-humans-keep/" rel="next"><span>다음 편 &rarr;</span><strong>에이전트가 코드를 써도 사람에게 남는 것</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>

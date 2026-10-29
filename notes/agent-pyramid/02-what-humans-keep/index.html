@@ -1,0 +1,155 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="에이전트가 코드를 써도 장애가 나면 연락을 받는 쪽은 사람이다. 생성된 코드를 한 줄씩 다 이해할 수는 없어도 조용한 실패를 알아채는 기초, 어디를 볼지 아는 폭, 필요할 때 파고드는 깊이는 사람에게 남아야 한다. 이 셋이 있어야 1편의 다섯 층도 설계할 수 있다."><title>에이전트가 코드를 써도 사람에게 남는 것 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="에이전트가 코드를 써도 사람에게 남는 것"><meta property="og:description" content="에이전트가 코드를 써도 장애가 나면 연락을 받는 쪽은 사람이다. 생성된 코드를 한 줄씩 다 이해할 수는 없어도 조용한 실패를 알아채는 기초, 어디를 볼지 아는 폭, 필요할 때 파고드는 깊이는 사람에게 남아야 한다. 이 셋이 있어야 1편의 다섯 층도 설계할 수 있다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-pyramid/02-what-humans-keep/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
+          if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
+          function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C9DTDZbb.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">에이전트를 믿게 만드는 환경 / 02-02</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#들어가며">들어가며</a><a href="#두-극단은-모두-답이-되지-못한다">두 극단은 모두 답이 되지 못한다</a><a href="#소유한다는-것은-고장-났을-때-연락받는-것이다">소유한다는 것은 고장 났을 때 연락받는 것이다</a><a href="#사람에게-남는-세-가지">사람에게 남는 세 가지</a><a href="#역피라미드에-붙여-보면">역피라미드에 붙여 보면</a><a href="#정리-에이전트에게-맡긴-뒤-사람이-확인할-것">정리: 에이전트에게 맡긴 뒤 사람이 확인할 것</a><a href="#출처">출처</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 02 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="에이전트가 코드를 써도 사람에게 남는 것">에이전트가 코드를 써도 사람에게 남는 것<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="지난-편">지난 편</h2>
+<p>에이전트의 실수를 어느 층에서 막을지 코드, 자동 검사, 하네스, 글, 사람 리뷰의 다섯 층으로 나눴다. 맨 아래 사람 리뷰에는 스펙을 잘못 이해한 구현, 설계 선택, 범위 판단처럼 기계가 판정할 수 없는 것만 남긴다.</p>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>에이전트가 코드를 써도 장애가 나면 연락을 받는 쪽은 사람이다. 생성된 코드를 한 줄씩 다 이해할 수는 없어도 조용한 실패를 알아채는 기초, 어디를 볼지 아는 폭, 필요할 때 파고드는 깊이는 사람에게 남아야 한다. 이 셋이 있어야 1편의 다섯 층도 설계할 수 있다.</p>
+<h2 id="들어가며">들어가며</h2>
+<p>1편은 사람 리뷰를 맨 아래에 두고 기계가 판정할 수 없는 것만 본다고 했다. 그런데 그것을 보려면 사람은 무엇을 알고 있어야 할까. 에이전트가 쓴 코드를 다 읽을 수 없다면, 무엇을 알아야 리뷰가 되고 장애가 났을 때 고칠 수 있을까.</p>
+<p>이 질문에 답한 글이 블로그 글 “Here Be Monsters”다. 원문의 주장을 정리하고, 그 주장을 1편의 역피라미드에 붙여 본다.</p>
+<h2 id="두-극단은-모두-답이-되지-못한다">두 극단은 모두 답이 되지 못한다</h2>
+<p>에이전트가 쓴 코드를 대하는 태도는 두 극단으로 나뉜다.</p>
+<ul>
+<li>모든 줄을 이해해야 한다: 에이전트가 코드를 만드는 속도가 사람이 읽고 흡수하는 속도보다 빠르다. 원문은 신입이 몇 년씩 손으로 코딩하며 배우게 할 회사도, 모든 생성 코드를 꼼꼼히 리뷰하는 관행이 업계 전체에 퍼질 가능성도 낮다고 본다.</li>
+<li>구현은 보지 않아도 된다: 검사를 통과하면 끝났다고 보는 태도다. 원문의 사례를 보면 이 태도가 왜 위험한지 알 수 있다.</li>
+</ul>
+<p>CI에서 SonarQube가 <code>App.tsx</code>의 순환 복잡도(cyclomatic complexity)를 지적했다. 파일은 30줄 남짓이었는데, 그중 15줄은 Codex가 컴포넌트 하나를 한 줄에 몰아 쓴 것이었다. <code>prettier</code>로 줄을 정리해도 복잡도는 그대로였다. 글쓴이가 로직을 읽어 보니 예외 처리가 과했지만 틀린 곳은 없었고, 복잡도도 요구사항에 비춰 필요한 수준이었다. 그래서 Codex에 SonarQube를 통과시켜 달라고 했고, Codex는 코드를 파일 10개로 나눴다. CI는 통과했고 그대로 배포됐다. 글쓴이는 그 10개가 자기가 한 번도 본 적 없는 코드였고, 일이 훨씬 나쁘게 흘러갈 수도 있었다고 적었다.</p>
+<p>1편에 비춰 보면 이 사례는 2층 자동 검사의 한계다. 검사는 통과 기준을 줄 뿐이고, 에이전트는 1편에서 말한 대로 가장 짧은 길을 고른다. 검사를 통과하는 가장 짧은 길이 코드를 쪼개는 것이었고, 그 결과 사람이 모르는 코드만 늘었다.</p>
+<h2 id="소유한다는-것은-고장-났을-때-연락받는-것이다">소유한다는 것은 고장 났을 때 연락받는 것이다</h2>
+<p>원문은 시스템을 소유한다는 것을 무언가 고장 났을 때 연락을 받는 사람이 된다는 뜻으로 정의한다. 지금까지 엔지니어는 코드를 직접 쓰고 장애를 겪으면서 시스템이 어떻게 돌아가는지 머릿속에 그림을 쌓았다. 에이전트가 코드를 쓰면 이 그림이 저절로 쌓이지 않는다. 그래도 연락은 여전히 사람에게 온다.</p>
+<p>그래서 질문이 바뀐다. 모든 코드를 알아야 하는지 묻는 대신, 고장 났을 때 무엇을 알고 있어야 고칠 수 있는지 묻는다.</p>
+<h2 id="사람에게-남는-세-가지">사람에게 남는 세 가지</h2>
+<h3 id="1-기초-조용한-실패를-알아챈다">1. 기초: 조용한 실패를 알아챈다</h3>
+<p>가장 알아채기 어려운 고장은 시스템이 대체로 돌아가는데 느려지거나 가끔 실패하는 경우다. 에러가 나지 않으니 검사도 통과한다. 이런 실패를 알아채려면 자료구조, 알고리즘, 네트워크, 동시성, 분산 시스템 같은 기초가 필요하다.</p>
+<p>원문의 예는 잠수 로봇이다. 2m 잠수에 4초, 4m에 16초, 16m에 256초가 걸린다. 깊이가 두 배가 될 때 시간이 네 배가 된다면 이차 복잡도를 의심해야 한다. 원문은 이 판단에 필요한 것이 그런 복잡도가 있다는 사실을 아는 정도라고 말한다.</p>
+<h3 id="2-폭-어디를-봐야-할지-안다">2. 폭: 어디를 봐야 할지 안다</h3>
+<p>모든 분야의 전문가가 될 필요는 없다. 무언가 이상할 때 무엇을 찾아봐야 할지 알면 된다. 이런 폭을 한 번에 가르쳐 주는 수업은 없으니, 원문은 읽고 궁금해하고 겪은 일을 자기 일에 이어 보면서 쌓으라고 권한다.</p>
+<h3 id="3-필요할-때의-깊이-낯선-문제를-끝까지-판다">3. 필요할 때의 깊이: 낯선 문제를 끝까지 판다</h3>
+<p>낯선 문제에 들어가 원인을 찾고, 그 자리에서 필요한 것을 배우는 능력이다. 원문 글쓴이가 만든 에이전트 오케스트레이터는 에이전트가 쓴 코드에서 안정성과 생명주기 버그가 계속 나왔다. 에이전트에게 여러 번 고치게 했지만 해결되지 않았다. 글쓴이는 예전에 Kubernetes 책에서 읽은 “레벨 트리거 상태 머신”이라는 말을 떠올렸고, 그 개념을 찾아 공부한 뒤 핵심 구조를 다시 설계했다. 그 뒤로 시스템은 안정적으로 돌아간다고 한다.</p>
+<p>이 사례에서 폭과 깊이가 이어진다. 예전에 읽어 둔 개념이 있어서 찾아볼 곳을 알았고(폭), 그 개념을 실제 설계에 쓸 수 있을 만큼 파고들었다(깊이). 혼자 풀 수 없는 문제라면 도움을 구하는 것도 이 능력에 들어간다.</p>
+<h2 id="역피라미드에-붙여-보면">역피라미드에 붙여 보면</h2>
+<p>세 능력은 5층 리뷰에서만 쓰이지 않는다. 1편의 위층을 설계할 때도 쓴다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>능력</th><th>쓰이는 층</th><th>예</th></tr></thead><tbody><tr><td>기초</td><td>2층 자동 검사</td><td>조용한 실패를 한 번 알아채면, 그 실패를 성능 테스트나 복잡도 검사로 바꿔 다음부터 기계가 거르게 한다</td></tr><tr><td>폭</td><td>4층 글</td><td>시스템의 경계, 입출력, 요청 흐름을 시퀀스 다이어그램 같은 지도로 남긴다. 내부를 다 몰라도 고장 난 곳을 따라갈 수 있다</td></tr><tr><td>깊이</td><td>1층 코드베이스</td><td>원문의 오케스트레이터처럼 같은 버그가 반복되면, 버그를 하나씩 고치는 대신 그 버그가 생길 수 없는 구조로 바꾼다</td></tr></tbody></table>
+<p>5층에서 사람이 직접 봐야 할 것도 더 분명해진다. 원문에 달린 댓글에서 여러 사람이 데이터 스키마, 저장되는 데이터 형식, 프로토콜, 공개 API는 사람이 직접 설계하고 검토한다고 했다. 이것들은 한번 정하면 그 뒤의 구현을 모두 묶어 두고, 나중에 바꾸기도 어렵다. 에이전트가 짠 함수 하나는 다시 짜면 되지만, 잘못 정한 스키마를 바꾸려면 그 위에 쌓인 코드와 데이터를 전부 옮겨야 한다.</p>
+<h2 id="정리-에이전트에게-맡긴-뒤-사람이-확인할-것">정리: 에이전트에게 맡긴 뒤 사람이 확인할 것</h2>
+<ol>
+<li>검사를 어떻게 통과했는가. 코드를 쪼개거나 우회해서 통과했다면 그 결과를 직접 본다.</li>
+<li>느려지거나 가끔 실패하는 곳이 있는가. 기초 지식으로 원인을 의심해 보고, 찾은 원인은 검사로 올린다.</li>
+<li>고장 났을 때 따라갈 지도가 있는가. 경계와 입출력을 글로 남긴다.</li>
+<li>되돌리기 어려운 결정인가. 스키마, 데이터 형식, 프로토콜, 공개 API는 사람이 직접 설계한다.</li>
+<li>같은 버그가 반복되는가. 그 부분은 직접 파고들어 구조부터 다시 본다.</li>
+</ol>
+<p>에이전트가 코드를 써도 연락은 사람에게 온다. 그때 필요한 것은 모든 줄을 아는 것이 아니라, 이상한 곳을 알아채고 필요한 만큼 파고드는 힘이다. 1편의 다섯 층을 계속 고쳐 나가는 일도 이 힘에 기댄다.</p>
+<h2 id="출처">출처</h2>
+<ul>
+<li><a href="https://blog.adrq.dev/here-be-monsters-what-do-you-still-need-to-know-when-agents-do-the-work">Here Be Monsters: What Do You Still Need to Know When Agents Do the Work?</a>, blog.adrq.dev</li>
+<li><a href="https://news.hada.io/topic?id=36162">GeekNews 요약과 댓글</a>, 2026-10-28</li>
+<li><a href="https://news.ycombinator.com/item?id=50258868">Hacker News 토론</a></li>
+</ul></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/agent-pyramid/01-inverted-pyramid/" rel="prev"><span>&larr; 이전 편</span><strong>에이전트를 믿게 만드는 역피라미드</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>
