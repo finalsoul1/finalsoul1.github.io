@@ -1,0 +1,209 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="Paseo 플러그인은 격리 장치 없이 그대로 믿고 실행하는 코드다. daemon은 플러그인 디렉터리 하나에서 번들 두 개를 만든다. 서버 번들은 daemon이 띄운 자식 프로세스에서 실행하고, 클라이언트 번들은 연결된 모든 앱 안에서 eval로 실행한다. 플러그인은 정해진 자리(라이프사이클 훅, provider, 화면과 패널)로만 붙고, Paseo에 함께 들어 있는 일부 provider와 사용량 조회 기능도 같은 경로로 들어온다."><title>플러그인 하나, 실행되는 곳 두 군데 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="플러그인 하나, 실행되는 곳 두 군데"><meta property="og:description" content="Paseo 플러그인은 격리 장치 없이 그대로 믿고 실행하는 코드다. daemon은 플러그인 디렉터리 하나에서 번들 두 개를 만든다. 서버 번들은 daemon이 띄운 자식 프로세스에서 실행하고, 클라이언트 번들은 연결된 모든 앱 안에서 eval로 실행한다. 플러그인은 정해진 자리(라이프사이클 훅, provider, 화면과 패널)로만 붙고, Paseo에 함께 들어 있는 일부 provider와 사용량 조회 기능도 같은 경로로 들어온다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-orchestrator/08-plugins/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
+          if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
+          function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C9DTDZbb.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 08-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-오케스트레이터가-플러그인을-받아야-하나">왜 오케스트레이터가 플러그인을 받아야 하나</a><a href="#서버-쪽-자식-프로세스와-ipc">서버 쪽: 자식 프로세스와 IPC</a><a href="#클라이언트-쪽-앱-안에서-eval">클라이언트 쪽: 앱 안에서 eval</a><a href="#붙는-자리">붙는 자리</a><a href="#눈여겨볼-설계-선택">눈여겨볼 설계 선택</a><a href="#개발-흐름">개발 흐름</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#연재를-마치며">연재를 마치며</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 08 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="플러그인 하나, 실행되는 곳 두 군데">플러그인 하나, 실행되는 곳 두 군데<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="지난-편">지난 편</h2>
+<p><a href="/notes/agent-orchestrator/07-relay-encryption/">7편</a>에서는 휴대폰이 relay를 거쳐 daemon에 붙을 때 그 내용을 어떻게 지키는지 봤다.</p>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>Paseo 플러그인은 격리 장치 없이 그대로 믿고 실행하는 코드다. daemon은 플러그인 디렉터리 하나에서 번들 두 개를 만든다. 서버 번들은 daemon이 띄운 자식 프로세스에서 실행하고, 클라이언트 번들은 연결된 모든 앱 안에서 <code>eval</code>로 실행한다. 플러그인은 정해진 자리(라이프사이클 훅, provider, 화면과 패널)로만 붙고, Paseo에 함께 들어 있는 일부 provider와 사용량 조회 기능도 같은 경로로 들어온다.</p>
+<h2 id="쉽게-보기">쉽게 보기</h2>
+<p>에이전트가 턴을 끝낼 때마다 사내 메신저로 알림을 보내고, 사이드바에 그 기록을 보여 주는 화면을 더하고 싶다고 하자. 플러그인 디렉터리는 이렇게 생긴다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L48-L58">plugins.md</a>).</p>
+<pre><code class="language-text">my-plugin/
+  paseo-plugin.json   id와 지원하는 Paseo 버전
+  index.server.ts     daemon 쪽 동작: 훅, RPC 처리, provider
+  index.client.tsx    앱 쪽 화면: 사이드바 항목, 패널, 버튼
+  server/  client/  shared/
+</code></pre>
+<p>이 디렉터리를 설치하면 일은 이렇게 나뉜다.</p>
+<pre><code class="language-text">                 [daemon] 두 진입 파일을 각각 번들로 묶는다
+                     |
+      +--------------+-----------------------------+
+      |                                            |
+  서버 번들                                    클라이언트 번들(문자열)
+  daemon이 띄운 자식 프로세스에서 실행          WebSocket으로 연결된 앱마다 보낸다
+  daemon &#x3C;-> 자식: IPC 메시지                  앱이 eval로 실행한다
+  "턴이 끝났다" -> 메신저로 알림                "사이드바에 항목 추가" -> 화면 그리기
+</code></pre>
+<p>설계 문서도 첫 문단에서 “<code>index.server.ts</code> in a subprocess and <code>index.client.tsx</code> in every connected app”이라고 적는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L3-L5">plugins.md</a>). 휴대폰 앱을 닫아도 서버 쪽 훅은 계속 돈다. 공개 문서에도 훅은 연결된 앱이 없어도 daemon에서 실행된다고 나와 있다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/public-docs/plugins/reference.md#L654">reference.md</a>).</p>
+<h2 id="왜-오케스트레이터가-플러그인을-받아야-하나">왜 오케스트레이터가 플러그인을 받아야 하나</h2>
+<p>오케스트레이터는 사람마다 쓰는 방식이 많이 다르다. 어떤 사람은 에이전트를 만들 때마다 특정 MCP 서버를 연결하고 싶고, 어떤 사람은 사내 이슈 트래커를 패널로 보고 싶다. 이런 요구를 모두 본체에 넣을 수는 없다. 그래서 본체가 “여기에 끼워 넣으면 된다”는 자리를 정해 두고, 나머지는 사용자 코드에 맡긴다.</p>
+<p>이때 정해야 할 것이 두 가지다. 하나는 그 코드를 어디서 실행하느냐다. 1편에서 본 것처럼 Paseo에는 daemon과 여러 클라이언트가 있으므로, 에이전트 동작에 관여하는 코드는 daemon 쪽에, 화면을 그리는 코드는 앱 쪽에 있어야 한다. 다른 하나는 그 코드를 얼마나 믿느냐다.</p>
+<h2 id="서버-쪽-자식-프로세스와-ipc">서버 쪽: 자식 프로세스와 IPC</h2>
+<p>daemon은 플러그인마다 Node 자식 프로세스를 <code>fork</code>로 띄우고, 표준 입출력 외에 <code>ipc</code> 채널을 하나 연다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/runtime.ts#L236-L242">runtime.ts</a>). 자식은 처음 받은 <code>initialize</code> 메시지에 담긴 서버 번들을 실행한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/plugin-process.ts#L604-L615">plugin-process.ts</a>). 그다음 플러그인의 <code>contribute(server)</code> 함수를 불러 등록을 받고, 등록된 RPC 메서드, 훅, provider 목록을 <code>ready</code> 메시지로 daemon에 알린다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/plugin-process.ts#L285-L317">plugin-process.ts</a>).</p>
+<p>그 뒤로 daemon과 자식이 주고받는 것은 모두 정해진 종류의 메시지다. daemon은 <code>hook</code>, <code>invoke</code>, <code>provider.connect</code> 같은 요청을 보내고, 자식은 <code>result</code>, <code>error</code>, <code>provider.event</code> 같은 응답을 돌려준다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/plugin-process-protocol.ts#L34-L110">plugin-process-protocol.ts</a>). daemon은 자식이 보낸 메시지를 매번 스키마로 검사하고, 맞지 않으면 잘못된 메시지로 처리한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/runtime.ts#L812-L821">runtime.ts</a>).</p>
+<p>프로세스를 따로 둔 덕분에 플러그인이 죽어도 daemon은 그 플러그인만 정리한다. 자식이 끝나면 daemon은 그 플러그인을 목록에서 빼고, 기다리던 요청과 provider 연결을 “Plugin process exited” 오류로 끝낸다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/runtime.ts#L1273-L1287">runtime.ts</a>).</p>
+<h2 id="클라이언트-쪽-앱-안에서-eval">클라이언트 쪽: 앱 안에서 eval</h2>
+<p>화면 코드는 다르게 다룬다. 앱이 daemon에 플러그인 목록을 물으면 응답에 플러그인마다 <code>clientBundle</code> 문자열이 들어 있다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/protocol/src/messages.ts#L6753-L6765">messages.ts</a>). 앱은 이 문자열을 <code>globalThis.eval</code>로 실행해 함수 하나를 얻고, 그 함수를 부를 때 <code>require</code> 대신 쓸 함수를 넘긴다. 그 함수는 React, React Native, Paseo SDK, <code>zod</code>, <code>@tanstack/react-query</code>처럼 앱이 정해 둔 모듈만 돌려주고, 그 밖의 모듈을 찾으면 오류를 낸다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/plugins/evaluate.ts#L509-L543">evaluate.ts</a>). 플러그인은 React를 따로 싣지 않고 앱의 React를 빌려 쓰는 셈이다.</p>
+<p>daemon에서 플러그인을 다시 불러오면 daemon이 <code>plugin_catalog_changed</code> 이벤트를 보내고, 연결된 앱은 목록을 다시 받아 그 플러그인만 바꿔 끼운다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/plugins/catalog-sync.tsx#L54-L76">catalog-sync.tsx</a>). 앱을 다시 빌드하거나 스토어 업데이트를 기다릴 필요가 없다. 그래서 이미 설치된 휴대폰 앱에도 플러그인 화면을 더할 수 있다.</p>
+<h2 id="붙는-자리">붙는 자리</h2>
+<p>플러그인이 동작을 더할 수 있는 곳은 SDK가 정해 둔 자리뿐이다.</p>
+<ul>
+<li><strong>라이프사이클 훅:</strong> <code>server.on()</code>은 일이 일어난 뒤 알림을 받는 9가지 이벤트(턴 시작과 끝, 권한 요청과 응답, 에이전트와 워크스페이스 생성, 보관 등)를 받는다. <code>server.before()</code>는 3가지 요청(<code>agent.create</code>, <code>agent.session_open</code>, <code>workspace.create</code>)을 실행 전에 받아 고쳐서 돌려준다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/plugin/src/server/lifecycle.ts#L52-L98">lifecycle.ts</a>). 4편에서 본 MCP 주입도 플러그인이 <code>agent.session_open</code>에서 할 수 있다.</li>
+<li><strong>서버 기능:</strong> RPC 처리기, provider, 사용량 조회(usage source), 설정을 등록한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/plugin/src/server/contracts.ts#L30-L43">contracts.ts</a>).</li>
+<li><strong>UI 기여 지점:</strong> 화면, 사이드바 위아래 항목, 워크스페이스와 에이전트 패널, Command Center 항목, 슬래시 명령, 헤더 버튼, 입력창 버튼, 첨부 소스, 테마, 파일 패널, timeline 항목 변환과 렌더러다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/plugin/src/client/contracts.ts#L176-L206">contracts.ts</a>).</li>
+</ul>
+<p>두 진입 파일 모두 기본 내보내기로 <code>contribute</code> 함수 하나를 내고, 그 함수는 정리 함수를 돌려줘야 한다. 다시 불러오거나 끌 때 Paseo가 이 정리 함수를 기다린 뒤 등록된 기여를 모두 걷어 내고 자식 프로세스를 멈춘다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L335-L339">plugins.md</a>).</p>
+<h2 id="눈여겨볼-설계-선택">눈여겨볼 설계 선택</h2>
+<p><strong>격리하지 않고, 믿을지를 사용자에게 묻는다.</strong> 문서는 설치를 “I trust this codebase”라는 뜻이라고 적고, 서버 코드는 daemon을 실행한 사용자 권한으로, 클라이언트 코드는 Paseo 앱 안에서 돈다고 밝힌다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L7">plugins.md</a>). CLI의 <code>plugin</code> 명령 설명도 “Manage trusted, unsandboxed plugins”다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/cli/src/commands/plugin/index.ts#L211">index.ts</a>). 자식 프로세스는 충돌을 나누는 장치이지 권한을 나누는 장치가 아니다. 서버 번들 안의 <code>require</code>는 <code>node:fs</code>나 <code>node:child_process</code> 같은 모듈도 그대로 불러온다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/bundle-evaluator.ts#L13-L26">bundle-evaluator.ts</a>).</p>
+<p>이 선택의 대가는 분명하다. daemon을 실행한 사용자가 할 수 있는 일은 플러그인도 모두 할 수 있다. 그래서 Paseo는 설치한 플러그인을 기본으로 꺼 둔다. 설정의 <code>pluginsEnabled</code>가 없으면 <code>false</code>이고(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/config.ts#L675">config.ts</a>), 이 값이 <code>true</code>가 되어야 설치한 플러그인이 시작된다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L39-L43">plugins.md</a>).</p>
+<p><strong>함께 들어 있는 기능도 같은 메시지로 붙는다.</strong> Paseo에는 처음부터 내장 플러그인 12개가 들어 있다. provider 3개(<code>antigravity-provider</code>, <code>hoplite-provider</code>, <code>muse-provider</code>)와 Claude, Codex, Cursor 등의 사용량 조회 9개다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/builtin/index.ts#L5-L18">index.ts</a>). 내장 플러그인은 자식 프로세스 없이 daemon 프로세스 안에서 돌지만(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/runtime.ts#L338-L356">runtime.ts</a>), 자식 프로세스 흉내를 내는 <code>InternalPluginChild</code>가 같은 메시지를 복사해 주고받는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/internal-child.ts#L16-L46">internal-child.ts</a>). 그래서 daemon 쪽 코드는 내장인지 외부인지 가리지 않는다. Claude Code와 Codex 연결 자체는 이 목록에 없고, 4편에서 본 daemon 코드에 들어 있다.</p>
+<p><strong>플러그인도 daemon의 클라이언트다.</strong> 서버 쪽 플러그인 코드는 <code>paseo</code> 객체로 에이전트나 워크스페이스를 다룬다. 이 객체는 앱이나 CLI와 같은 <code>DaemonClient</code>이고, 주소만 <code>ipc://plugin/&#x3C;id></code>라서 WebSocket 대신 IPC 채널로 메시지가 오간다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/plugin-process.ts#L268-L279">plugin-process.ts</a>). 1편의 그림에서 클라이언트가 하나 더 늘어난 것과 같다.</p>
+<h2 id="개발-흐름">개발 흐름</h2>
+<p>명령은 몇 개뿐이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L11-L22">plugins.md</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/cli/src/commands/plugin/index.ts#L210-L267">CLI</a>).</p>
+<pre><code class="language-text">paseo plugin init &#x3C;디렉터리>     파일만 만든다. npm install은 직접 한다
+npm install &#x26;&#x26; npm run typecheck SDK는 타입 검사용 개발 의존성일 뿐이다
+paseo plugin install &#x3C;디렉터리>  daemon 설정에 그 경로를 등록한다
+(코드 수정)
+paseo plugin reload &#x3C;id>         옛 프로세스를 끝까지 정리한 뒤 디스크에서 다시 번들한다
+paseo plugin logs &#x3C;id>           자식 프로세스의 stdout, stderr 최근 기록
+</code></pre>
+<p>TypeScript와 TSX는 Paseo가 직접 번들하고 SDK와 React는 실행 때 넣어 준다. 그래서 플러그인을 설치해 쓰는 사람은 이 패키지들을 따로 설치하지 않는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L60-L62">plugins.md</a>). 저장해도 자동으로 다시 불러오지 않는다. <code>reload</code>가 실패하면 옛 코드로 돌아가지 않고 실패한 채 남는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L84-L87">plugins.md</a>). 로그는 daemon 메모리에 플러그인마다 최근 500개 항목까지 남고, daemon을 다시 시작하면 사라진다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/runtime.ts#L45">runtime.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L225-L232">plugins.md</a>). 내장 플러그인은 <code>reload</code>로 다시 불러올 수 없어서, 고쳤으면 daemon을 다시 시작해야 한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/plugins.md#L111-L114">plugins.md</a>).</p>
+<h2 id="새-용어">새 용어</h2>
+<ul>
+<li><strong>sandbox</strong>: 실행하는 코드가 파일, 네트워크, 다른 프로세스에 손대지 못하게 막아 둔 실행 환경. 브라우저 탭 안의 웹 페이지가 내 컴퓨터 파일을 마음대로 읽지 못하는 것이 sandbox 덕분이다. Paseo 플러그인은 sandbox 없이 돈다.</li>
+<li><strong>IPC</strong>(프로세스 간 통신): 같은 컴퓨터의 두 프로세스가 메시지를 주고받는 방법. Node에서 <code>fork</code>로 띄운 자식 프로세스와는 <code>process.send()</code>와 <code>message</code> 이벤트로 객체를 주고받는다.</li>
+<li><strong>번들</strong>: 진입 파일과 그 파일이 가져오는 코드를 하나로 묶은 JavaScript. Paseo는 플러그인마다 서버용과 클라이언트용 번들을 따로 만든다.</li>
+</ul>
+<details id="deeper">
+<summary>더 깊이</summary>
+<p><strong>번들은 esbuild로 만들고, 공유 모듈은 빼 둔다.</strong></p>
+<p>daemon은 TypeScript 번들 작업을 별도 worker thread에서 하고, 1초 동안 일이 없으면 그 worker를 종료해 메모리를 돌려준다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/compiler.ts#L32-L77">compiler.ts</a>). esbuild 설정을 보면 서버 번들은 Node용, 클라이언트 번들은 플랫폼 중립으로 만들고, Paseo SDK와 React, <code>zod</code> 같은 모듈은 <code>external</code>로 빼 둔다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/compiler-build.ts#L335-L361">compiler-build.ts</a>). 빼 둔 모듈은 앞에서 본 대로 실행할 때 앱이나 daemon이 넣어 준다. 클라이언트 번들은 Metro를 거치지 않고 휴대폰 앱에서 바로 실행되므로 <code>async</code>/<code>await</code>를 미리 옛 문법으로 바꿔 둔다는 주석도 있다.</p>
+<p><strong>before 훅은 순서대로 이어지고, 하나가 실패하면 작업이 멈춘다.</strong></p>
+<p>여러 플러그인이 같은 <code>before</code> 훅을 등록하면 플러그인 ID 순서로, 한 플러그인 안에서는 등록 순서로 부른다. 앞 훅이 고친 요청을 다음 훅이 받고, <code>undefined</code>를 돌려주면 그대로 넘긴다. 훅이 예외를 던지거나 잘못된 값을 돌려주면 에이전트 생성 같은 원래 작업이 실패한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/public-docs/plugins/reference.md#L1069-L1086">reference.md</a>). 훅마다 30초 제한이 있고, <code>on</code> 이벤트 처리기의 오류는 기록만 하고 원래 작업은 계속된다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/public-docs/plugins/reference.md#L1102-L1104">reference.md</a>). 설계 문서는 <code>lifecycle-logger</code> 예제가 훅 “eleven”개를 모두 등록한다고 적지만, 태그의 타입 정의와 예제 코드에는 이벤트 9개와 before 3개, 모두 12개가 있다.</p>
+<p><strong>플러그인을 멈출 때는 단계를 밟는다.</strong></p>
+<p>daemon은 먼저 <code>shutdown</code> 메시지를 보내 플러그인이 스스로 정리하게 한다. 2초 안에 끝나지 않으면 <code>SIGTERM</code>, 다시 2초 뒤에는 <code>SIGKILL</code>을 보낸다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/plugins/runtime.ts#L1311-L1324">runtime.ts</a>). 추측이지만, 플러그인의 정리 함수가 끝나지 않아도 daemon이 계속 기다리지 않게 하려는 장치로 보인다.</p>
+</details>
+<h2 id="연재를-마치며">연재를 마치며</h2>
+<p>1편의 지도를 다시 펴 보면 각 편은 그림의 한 부분에 이렇게 답했다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>편</th><th>그림에서 다룬 부분</th><th>답</th></tr></thead><tbody><tr><td><a href="/notes/agent-orchestrator/01-one-daemon-many-clients/">1편</a></td><td>전체</td><td>에이전트, 터미널, 워크스페이스는 daemon 하나가 맡고, 데스크톱, 모바일, CLI는 모두 그 daemon의 클라이언트다</td></tr><tr><td><a href="/notes/agent-orchestrator/02-workspace/">2편</a></td><td>daemon 안의 워크스페이스</td><td>워크스페이스는 프로젝트 아래의 작업 디렉터리 하나이고, worktree와 setup, 보관까지 daemon이 맡는다</td></tr><tr><td><a href="/notes/agent-orchestrator/03-shared-between-sessions/">3편</a></td><td>워크스페이스 안의 세션들</td><td>세션들은 파일과 터미널을 함께 쓰지만 대화는 나누지 않고, 맥락은 정해진 경로로만 옮겨진다</td></tr><tr><td><a href="/notes/agent-orchestrator/04-providers/">4편</a></td><td>daemon과 에이전트 CLI 사이</td><td>에이전트 CLI의 화면을 읽지 않고 구조화된 프로토콜로 연결해 하나의 인터페이스로 다룬다</td></tr><tr><td><a href="/notes/agent-orchestrator/05-rendering/">5편</a></td><td>클라이언트 화면</td><td>한 코드로 여러 기기를 그리고, 터미널 상태와 git diff 하이라이팅은 서버가 맡는다</td></tr><tr><td><a href="/notes/agent-orchestrator/06-mobile-sync/">6편</a></td><td>클라이언트와 daemon 사이 연결</td><td>빠진 구간만 다시 받고 출력을 묶어 보내서, 끊겼다 붙어도 화면이 맞는다</td></tr><tr><td><a href="/notes/agent-orchestrator/07-relay-encryption/">7편</a></td><td>relay</td><td>페어링 때 받은 daemon 공개키로 종단 간 암호화를 걸어, relay는 내용을 보지 못한다</td></tr><tr><td>8편</td><td>전체</td><td>플러그인은 믿고 실행하는 코드이고, daemon과 앱 두 곳에서 정해진 자리로 붙는다</td></tr></tbody></table>
+<p>여덟 편에서 되풀이해 나온 구조는 하나다. 상태와 실행은 내 컴퓨터의 daemon 한 곳에 두고, 나머지는 모두 그 daemon에 붙는 클라이언트로 만든다. 휴대폰 앱도, CLI도, 플러그인도 그렇다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/agent-orchestrator/07-relay-encryption/" rel="prev"><span>&larr; 이전 편</span><strong>relay를 믿지 않고 통신하는 법</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="한 워크스페이스의 세션들은 디스크(파일과 git 작업 트리)와 워크스페이스에 붙은 도구(터미널, 스크립트, 브라우저 탭)를 공유한다. 대화 기록, provider 세션, 모델과 모드 설정은 세션마다 따로 있고, Paseo는 세션에게 옆 세션이 있다는 사실도 알려 주지 않는다. 한 세션의 맥락이 다른 세션으로 넘어가는 길은 누군가 명시적으로 보내는 네 가지 경로뿐이고, 그중 셋은 기본값에서 꺼져 있는 Paseo 도구 주입을 켜야 쓸 수 있다."><title>한 워크스페이스의 세션들이 나눠 갖는 것 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="한 워크스페이스의 세션들이 나눠 갖는 것"><meta property="og:description" content="한 워크스페이스의 세션들은 디스크(파일과 git 작업 트리)와 워크스페이스에 붙은 도구(터미널, 스크립트, 브라우저 탭)를 공유한다. 대화 기록, provider 세션, 모델과 모드 설정은 세션마다 따로 있고, Paseo는 세션에게 옆 세션이 있다는 사실도 알려 주지 않는다. 한 세션의 맥락이 다른 세션으로 넘어가는 길은 누군가 명시적으로 보내는 네 가지 경로뿐이고, 그중 셋은 기본값에서 꺼져 있는 Paseo 도구 주입을 켜야 쓸 수 있다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-orchestrator/03-shared-between-sessions/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
+          if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
+          function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C9DTDZbb.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 03-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-오케스트레이터가-이-경계를-정해야-하나">왜 오케스트레이터가 이 경계를 정해야 하나</a><a href="#paseo에서-세션-하나가-가진-것">Paseo에서 세션 하나가 가진 것</a><a href="#워크스페이스에-붙어-있는-것">워크스페이스에 붙어 있는 것</a><a href="#맥락이-옮겨지는-네-가지-경로">맥락이 옮겨지는 네 가지 경로</a><a href="#눈여겨볼-설계-선택">눈여겨볼 설계 선택</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 03 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="한 워크스페이스의 세션들이 나눠 갖는 것">한 워크스페이스의 세션들이 나눠 갖는 것<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="지난-편">지난 편</h2>
+<p><a href="/notes/agent-orchestrator/02-workspace/">2편</a>에서 워크스페이스가 daemon 하나의 작업 디렉터리(<code>cwd</code>) 하나라는 것을 봤다.</p>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>한 워크스페이스의 세션들은 디스크(파일과 git 작업 트리)와 워크스페이스에 붙은 도구(터미널, 스크립트, 브라우저 탭)를 공유한다. 대화 기록, provider 세션, 모델과 모드 설정은 세션마다 따로 있고, Paseo는 세션에게 옆 세션이 있다는 사실도 알려 주지 않는다. 한 세션의 맥락이 다른 세션으로 넘어가는 길은 누군가 명시적으로 보내는 네 가지 경로뿐이고, 그중 셋은 기본값에서 꺼져 있는 Paseo 도구 주입을 켜야 쓸 수 있다.</p>
+<h2 id="쉽게-보기">쉽게 보기</h2>
+<p>워크스페이스 하나에 세션 두 개를 열었다고 하자. 세션 A(Claude Code)는 로그인 기능을 만들고, 세션 B(Codex)는 그 변경을 리뷰한다.</p>
+<pre><code class="language-text">워크스페이스 (cwd 하나)
+  |
+  +-- 디스크: 파일, git 작업 트리, 현재 브랜치      &#x3C;- A와 B가 같은 것을 본다
+  +-- 터미널, 스크립트, 브라우저 탭                 &#x3C;- 워크스페이스에 붙어 있다
+  |
+  +-- 세션 A (Claude Code)          +-- 세션 B (Codex)
+        대화 기록 A                       대화 기록 B
+        provider 세션 A                   provider 세션 B
+        모델, 모드 A                      모델, 모드 B
+</code></pre>
+<p>B 입장에서 정리하면 이렇다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>질문</th><th>답</th><th>이유</th></tr></thead><tbody><tr><td>A가 방금 고친 <code>login.ts</code>를 B가 읽을 수 있나</td><td>된다</td><td>같은 디렉터리라 A가 저장한 순간 디스크에서 보인다</td></tr><tr><td>A가 왜 그렇게 고쳤는지 B가 알 수 있나</td><td>안 된다</td><td>A의 대화는 B의 프롬프트에 들어가지 않는다. B는 <code>git diff</code>로 결과만 본다</td></tr><tr><td>저장소의 <code>CLAUDE.md</code>, <code>AGENTS.md</code> 규칙을 둘 다 따르나</td><td>둘 다 각자 읽는다</td><td>같은 <code>cwd</code>에서 시작하므로 provider가 같은 파일을 찾는다</td></tr><tr><td>A의 모델을 바꾸면 B도 바뀌나</td><td>안 바뀐다</td><td>모델과 모드는 세션마다 저장된다</td></tr><tr><td>A가 띄운 dev 서버 터미널 출력을 B가 볼 수 있나</td><td>Paseo 도구가 켜져 있으면 된다</td><td>터미널은 워크스페이스에 붙어 있다</td></tr><tr><td>A가 <code>git switch other-branch</code> 하면 B는 어떻게 되나</td><td>B의 파일도 그 브랜치로 바뀐다</td><td>작업 트리가 하나라서 생기는 git의 동작이다</td></tr></tbody></table>
+<p>마지막 줄은 Paseo 코드와 관계없이, 작업 트리가 하나뿐이라 git이 그렇게 동작해서 생기는 결과다. 같은 파일을 두 세션이 동시에 고칠 때 Paseo가 순서를 정하거나 잠그는 장치는 코드에서 찾지 못했다. 서로 부딪히면 안 되는 일이라면 2편에서 본 worktree 워크스페이스로 디렉터리부터 나누는 것이 Paseo가 안내하는 방법이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/public-docs/workspaces.md#L40-L45">workspaces.md</a>).</p>
+<h2 id="왜-오케스트레이터가-이-경계를-정해야-하나">왜 오케스트레이터가 이 경계를 정해야 하나</h2>
+<p>에이전트 CLI 하나만 쓸 때는 고민할 것이 없다. 터미널 창 하나가 대화 하나이고, 그 대화가 곧 에이전트가 기억하는 전부다. 같은 디렉터리에 에이전트를 여러 개 띄우는 오케스트레이터는 무엇을 함께 쓰게 할지 정해야 한다. 양 끝은 이렇다.</p>
+<ul>
+<li><strong>모두 공유:</strong> 세션들이 대화까지 나눠 가지면 서로의 맥락을 알지만, 리뷰를 맡긴 세션이 구현 세션의 시행착오를 그대로 떠안는다. 한 세션의 긴 기록이 다른 세션의 컨텍스트 윈도를 차지한다.</li>
+<li><strong>모두 격리:</strong> 세션마다 디렉터리까지 따로 두면 충돌은 없지만, 리뷰 세션이 구현 결과를 볼 방법이 사라진다.</li>
+</ul>
+<p>Paseo 문서는 워크스페이스를 안정적인 그릇(stable container)으로, 세션을 그 안에서 실행하는 것으로 설명한다. 구현하는 에이전트, 서비스를 띄운 터미널, 리뷰하는 에이전트, 옆에 띄운 브라우저가 같은 작업에 속하므로 한곳에 둔다는 것이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/public-docs/workspaces.md#L32-L38">workspaces.md</a>). 그래서 경계는 “작업 대상은 공유하고, 대화는 나눈다”로 그어진다.</p>
+<h2 id="paseo에서-세션-하나가-가진-것">Paseo에서 세션 하나가 가진 것</h2>
+<p>용어집은 에이전트 세션을 “provider 하나, 모델 하나, <code>cwd</code> 하나, timeline 하나”로 정의한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/glossary.md#L31">glossary.md</a>). daemon은 세션마다 기록 파일을 하나씩 둔다. 그 안에는 모델과 모드 같은 설정(<code>config</code>), provider 쪽 세션을 다시 이어 붙일 때 쓰는 식별자(<code>persistence</code>), 소속 워크스페이스(<code>workspaceId</code>)를 저장한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/agent-storage.ts#L45-L77">agent-storage.ts</a>). 같은 워크스페이스의 세션이라도 이 파일은 서로 다르다.</p>
+<p>세션을 시작할 때 daemon은 환경 변수 두 개를 넣는다. <code>PASEO_AGENT_ID</code>는 세션마다 다르고, <code>PASEO_AGENT_CWD</code>는 같은 워크스페이스라면 같다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/agent-manager.ts#L5563-L5572">agent-manager.ts</a>). 두 세션의 차이와 공통점이 이 두 값에 드러난다.</p>
+<p>system prompt도 세션 단위다. Claude Code 세션이라면 Paseo가 덧붙이는 부분은 그 세션을 만들 때 정한 system prompt와 daemon 설정의 공통 문구 두 가지뿐이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/providers/claude/agent.ts#L3579-L3583">agent.ts</a>). 옆 세션의 목록이나 대화를 넣는 코드는 찾지 못했다.</p>
+<p>두 세션이 모두 <code>CLAUDE.md</code>를 따르는 이유는 provider 쪽에 있다. Paseo는 Claude Agent SDK에 <code>cwd</code>와 설정 출처(<code>user</code>, <code>project</code>, <code>local</code>)를 넘길 뿐이고(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/providers/claude/agent.ts#L3636-L3655">agent.ts</a>), 파일을 찾아 읽는 것은 provider의 동작이다. 같은 디렉터리에서 시작하니 두 세션이 같은 파일을 읽는다.</p>
+<h2 id="워크스페이스에-붙어-있는-것">워크스페이스에 붙어 있는 것</h2>
+<p>터미널, 스크립트, 브라우저 탭은 세션 대신 워크스페이스가 가진다. 용어집도 터미널을 워크스페이스 단위로 정의한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/glossary.md#L43">glossary.md</a>). 에이전트용 도구도 같은 기준으로 움직인다.</p>
+<ul>
+<li><code>list_terminals</code>는 <code>cwd</code>를 주지 않으면 호출한 세션의 작업 디렉터리에 있는 터미널을 돌려준다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/tools/paseo-tools.ts#L2444-L2490">paseo-tools.ts</a>). A가 만든 터미널을 B가 찾아 <code>capture_terminal</code>로 출력을 읽을 수 있다.</li>
+<li>워크스페이스 스크립트(<code>paseo.json</code>에 적은 명령)는 <code>workspaceId</code>로 찾고 실행한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/tools/paseo-tools.ts#L2367-L2416">paseo-tools.ts</a>).</li>
+<li>브라우저 도구는 “이 에이전트의 워크스페이스”에 열린 탭을 다룬다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/browser-tools/tools.ts#L66-L90">tools.ts</a>).</li>
+</ul>
+<p>단, 에이전트가 이 도구를 쓰려면 Paseo 도구 주입 설정(<code>daemon.mcp.injectIntoAgents</code>)이 켜져 있어야 하고, 기본값은 꺼짐이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/public-docs/mcp.md#L14-L18">mcp.md</a>). 꺼져 있으면 에이전트는 이 도구들을 쓸 수 없고, 터미널과 브라우저 탭은 사람이 앱에서 보는 화면으로만 남는다. 도구가 켜져 있으면 B가 옆 세션을 찾을 수도 있다. <code>list_agents</code>는 호출한 세션의 <code>cwd</code>를 기본 필터로 쓰므로, B가 부르면 같은 디렉터리의 세션 목록이 나온다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/tools/paseo-tools.ts#L2158-L2159">paseo-tools.ts</a>). Paseo가 먼저 알려 주지는 않지만, 물어보면 답한다.</p>
+<h2 id="맥락이-옮겨지는-네-가지-경로">맥락이 옮겨지는 네 가지 경로</h2>
+<p>대화는 공유되지 않으므로, 한 세션이 아는 것을 다른 세션에 전하려면 누군가 글로 옮겨야 한다. Paseo에 있는 경로는 넷이다. fork를 뺀 세 경로는 에이전트가 쓰는 Paseo 도구라서, 앞에서 본 도구 주입이 켜져 있어야 쓸 수 있다. 꺼져 있으면 어떤 provider도 이 도구를 받지 못하고(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/data-model.md#L308-L309">data-model.md</a>), 기본 설정에서 바로 쓸 수 있는 경로는 사용자가 앱에서 하는 fork뿐이다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>경로</th><th>누가 시작하나</th><th>옮겨지는 것</th></tr></thead><tbody><tr><td><code>create_agent</code>의 <code>initialPrompt</code></td><td>부모 세션</td><td>부모가 쓴 첫 지시문 하나</td></tr><tr><td>완료 알림</td><td>daemon이 자동으로</td><td>자식의 마지막 답변 앞 4,000자</td></tr><tr><td><code>get_agent_activity</code>, <code>send_agent_prompt</code></td><td>어느 세션이든</td><td>상대 timeline 요약을 읽거나, 상대에게 메시지를 보냄</td></tr><tr><td>fork</td><td>사용자가 앱에서</td><td>원래 세션의 대화를 추린 글, 최대 10만 자</td></tr></tbody></table>
+<p><strong><code>create_agent</code>:</strong> 자식 세션을 만들 때 <code>initialPrompt</code>는 필수다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/tools/paseo-tools.ts#L1189-L1193">paseo-tools.ts</a>). 에이전트가 호출하면 워크스페이스는 기본으로 부모와 같고, 완료 알림(<code>notifyOnFinish</code>)도 기본으로 켜진다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/tools/paseo-tools.ts#L1203-L1222">paseo-tools.ts</a>). 부모에게서 물려받는 설정은 같은 provider일 때의 <code>providerOptions</code> 정도이고 대화는 아니다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/tools/paseo-tools.ts#L863-L871">paseo-tools.ts</a>). 자식은 첫 지시문에 적힌 것만 알고 시작한다.</p>
+<p><strong>완료 알림:</strong> 자식이 끝나거나, 오류가 나거나, 권한을 기다리면 daemon이 부모에게 메시지를 넣는다. 자식의 마지막 답변은 앞 4,000자까지만 담고, 넘치면 잘린 글자 수와 함께 <code>get_agent_activity</code>로 전체를 보라는 안내를 붙인다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/finish-subscriptions/internal/notification.ts#L24-L68">notification.ts</a>). 이 메시지는 에이전트 envelope(메시지를 감싸는 <code>&#x3C;paseo-system></code> 태그)에 싸여 부모의 다음 입력으로 들어간다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/agent-messages/envelope.ts#L69-L78">envelope.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/finish-subscriptions/index.ts#L185-L203">index.ts</a>).</p>
+<pre><code class="language-text">일부 속성과 줄을 생략한 모양
+
+&#x3C;paseo-system version="1" kind="agent-notification" source-agent-id="(자식 ID)"
+              message-id="..." source-agent-title="리뷰" event="finished">
+Agent (자식 ID) (리뷰) finished.
+(마지막 답변 앞 4,000자)
+&#x3C;/paseo-system>
+</code></pre>
+<p><strong><code>get_agent_activity</code>와 <code>send_agent_prompt</code>:</strong> 앞의 것은 상대 세션의 timeline을 요약 글로 받아 오고(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/tools/paseo-tools.ts#L3151-L3188">paseo-tools.ts</a>), 뒤의 것은 상대에게 <code>kind="agent-message"</code> envelope로 메시지를 보낸다. 둘 다 같은 워크스페이스인지 따지지 않고 에이전트 ID만 있으면 된다.</p>
+<p><strong>fork:</strong> 앱의 답변 아래 메뉴에서 “Fork in a new tab”이나 “Fork in a new workspace”를 고르면, daemon이 원래 세션의 사용자 메시지, 답변, 도구 호출을 글로 엮어 첨부 파일 하나를 만든다. 생각 과정(reasoning)은 빼고, 10만 자를 넘으면 오래된 쪽부터 덜어 낸다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/activity-curator.ts#L335-L378">activity-curator.ts</a>). 앱은 같은 provider, 모델, 모드로 새 초안을 열고 이 첨부를 붙인다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/hooks/use-fork-agent.ts#L93-L111">use-fork-agent.ts</a>). 용어집은 fork가 provider 쪽 세션을 이어 가거나 가지 치지 않는다고 분명히 적는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/glossary.md#L59">glossary.md</a>). 새 세션이 받는 것은 대화의 사본이 아니라 대화를 요약한 글이다.</p>
+<h2 id="눈여겨볼-설계-선택">눈여겨볼 설계 선택</h2>
+<p><strong>handoff는 기능이 아니라 프롬프트 템플릿이다.</strong> Paseo에 들어 있는 <code>paseo-handoff</code> 스킬은 받는 에이전트가 “zero context”로 시작하니 브리핑을 그 자체로 완결되게 쓰라고 한다. 이어서 Task, Context, Relevant files, What was tried, Decisions 같은 절을 채우라는 틀을 주고, 그 글을 <code>create_agent</code>의 첫 지시문으로 넘긴다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/skills/paseo-handoff/SKILL.md#L9-L60">SKILL.md</a>). 대화를 옮기는 장치가 따로 없으니, 맥락을 옮기는 일은 결국 브리핑 글을 잘 쓰는 일이 된다.</p>
+<p><strong>옮길 때는 줄여서 옮긴다.</strong> 자동으로 옮기는 경로에는 완료 알림 4,000자, fork 10만 자처럼 상한이 있다. 부모가 직접 쓰는 <code>initialPrompt</code>에는 상한이 없다. 코드 주석에 이유는 적혀 있지 않지만, 추측하자면 받는 세션의 컨텍스트 윈도는 그 세션의 일에 써야 하므로 다른 세션의 기록을 전부 넣지 않으려는 선택으로 보인다. 더 필요하면 받는 쪽이 <code>get_agent_activity</code>로 직접 가져갈 수 있다.</p>
+<p><strong>충돌은 디렉터리를 나눠서 피한다.</strong> Paseo는 같은 디렉터리의 세션들을 조율하지 않는다. 잠금이나 순서 정하기를 넣는 대신, 겹치면 안 되는 일에는 worktree 워크스페이스로 디렉터리를 따로 준다. 조율 장치가 없으므로 두 세션이 같은 파일을 고치면 나중에 쓴 쪽이 앞의 변경을 덮을 수 있다고 보는 편이 안전하다(파일 시스템의 일반적인 동작에서 한 추측이고, 코드로 확인하지는 않았다).</p>
+<h2 id="새-용어">새 용어</h2>
+<ul>
+<li><strong>컨텍스트 윈도</strong>: 모델이 한 번에 읽을 수 있는 입력의 크기. 대화 기록, system prompt, 첨부가 모두 이 안에 들어가야 하므로, 다른 세션의 기록을 많이 넣을수록 지금 일에 쓸 자리가 줄어든다.</li>
+<li><strong>에이전트 envelope</strong>: Paseo가 에이전트끼리 주고받는 메시지를 감싸는 <code>&#x3C;paseo-system></code> 태그. 보낸 세션의 ID, 메시지 종류(<code>agent-message</code>, <code>agent-notification</code>), 사건(<code>finished</code> 등)을 속성으로 달아, 받는 쪽과 앱이 사람이 쓴 프롬프트와 구별할 수 있게 한다.</li>
+</ul>
+<details id="deeper">
+<summary>더 깊이</summary>
+<p><strong>같은 디렉터리를 쓰는 워크스페이스가 둘이면.</strong></p>
+<p>워크스페이스 두 개가 같은 <code>cwd</code>를 가리킬 수도 있다. 이때 용어집은 두 종류를 나눈다. git diff와 상태, 파일 탐색기 내용처럼 디렉터리로 정해지는 화면은 <code>cwd</code> 기준이라 두 워크스페이스가 똑같이 본다. 탭, 에이전트, 터미널, 첨부처럼 워크스페이스가 가진 상태는 <code>workspaceId</code> 기준이라 옆 워크스페이스로 새지 않는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/glossary.md#L27-L28">glossary.md</a>). 이 편의 “디스크는 공유, 나머지는 분리” 경계가 워크스페이스 사이에도 한 번 더 그어지는 셈이다.</p>
+<p><strong>사람이 envelope를 흉내 내면.</strong></p>
+<p>사람이 입력창에 <code>&#x3C;paseo-system ...></code> 형식의 글을 직접 쓰면, daemon은 그 글을 <code>kind="user-message"</code> envelope로 한 번 더 감싼다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/agent-messages/envelope.ts#L124-L157">envelope.ts</a>). 그래서 사람이 쓴 글이 다른 에이전트가 보낸 알림처럼 보이지 않는다. 본문은 XML 이스케이프를 거치므로 본문 안에 닫는 태그를 넣어 envelope를 일찍 끝낼 수도 없다.</p>
+<p><strong><code>send_agent_prompt</code>는 바로 보내지 않는다.</strong></p>
+<p>에이전트가 보낸 메시지는 받는 세션마다 2초 동안 조용할 때까지 기다렸다가 전달되고, 호출한 쪽은 먼저 “대기 중” 영수증을 받는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/tools/paseo-tools.ts#L1944-L1951">paseo-tools.ts</a>). 상대가 일하는 중이면 기본으로 진행 중인 턴에 끼워 넣는다(steer, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/tools/paseo-tools.ts#L1960-L1965">paseo-tools.ts</a>).</p>
+<p><strong>도구 정책은 보안 경계가 아니다.</strong></p>
+<p>provider마다 Paseo 도구를 끄거나 일부만 줄 수 있다. 하지만 설계 문서는 이 정책이 에이전트에게 보여 주는 도구 목록만 정할 뿐, 셸로 호스트에 접근할 수 있는 에이전트를 막는 권한 경계는 아니라고 적는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/data-model.md#L306-L311">data-model.md</a>). 같은 디렉터리의 세션들은 도구가 없어도 셸로 같은 파일과 프로세스에 손댈 수 있다.</p>
+</details>
+<h2 id="다음-편">다음 편</h2>
+<p><a href="/notes/agent-orchestrator/04-providers/">4편</a>에서는 Claude Code, Codex처럼 서로 다른 에이전트 CLI를 daemon이 어떻게 하나처럼 다루는지 본다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/agent-orchestrator/02-workspace/" rel="prev"><span>&larr; 이전 편</span><strong>워크스페이스</strong></a><a class="note-pager-next" href="/notes/agent-orchestrator/04-providers/" rel="next"><span>다음 편 &rarr;</span><strong>서로 다른 에이전트를 하나처럼 다루기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>

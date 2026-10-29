@@ -1,0 +1,225 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="워크스페이스는 daemon 하나 위의 작업 디렉터리(cwd) 하나에 id를 붙인 단위이고, 에이전트 세션은 모두 어떤 워크스페이스에 속한다. 디렉터리를 따로 떼어야 하면 Paseo는 git worktree를 만들고, 이름은 임시로 붙였다가 나중에 다시 짓는다. 다 쓴 워크스페이스는 기록을 지우지 않고 보관 표시만 한 뒤 디렉터리만 정리한다."><title>워크스페이스 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="워크스페이스"><meta property="og:description" content="워크스페이스는 daemon 하나 위의 작업 디렉터리(cwd) 하나에 id를 붙인 단위이고, 에이전트 세션은 모두 어떤 워크스페이스에 속한다. 디렉터리를 따로 떼어야 하면 Paseo는 git worktree를 만들고, 이름은 임시로 붙였다가 나중에 다시 짓는다. 다 쓴 워크스페이스는 기록을 지우지 않고 보관 표시만 한 뒤 디렉터리만 정리한다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-orchestrator/02-workspace/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
+          if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
+          function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C9DTDZbb.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 02-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-워크스페이스라는-단위가-필요한가">왜 워크스페이스라는 단위가 필요한가</a><a href="#프로젝트-워크스페이스-에이전트-세션">프로젝트, 워크스페이스, 에이전트 세션</a><a href="#worktree는-어디에-생기나">worktree는 어디에 생기나</a><a href="#이름은-나중에-짓는다">이름은 나중에 짓는다</a><a href="#paseojson-만들-때와-지울-때-할-일">paseo.json: 만들 때와 지울 때 할 일</a><a href="#보관해도-기록과-브랜치는-남는다">보관해도 기록과 브랜치는 남는다</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 02 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="워크스페이스">워크스페이스<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="지난-편">지난 편</h2>
+<p><a href="/notes/agent-orchestrator/01-one-daemon-many-clients/">1편</a>에서 daemon 하나가 에이전트, 터미널, 워크스페이스를 모두 맡고 앱과 CLI는 WebSocket으로 붙는 클라이언트라는 것을 봤다.</p>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>워크스페이스는 daemon 하나 위의 작업 디렉터리(<code>cwd</code>) 하나에 id를 붙인 단위이고, 에이전트 세션은 모두 어떤 워크스페이스에 속한다. 디렉터리를 따로 떼어야 하면 Paseo는 git worktree를 만들고, 이름은 임시로 붙였다가 나중에 다시 짓는다. 다 쓴 워크스페이스는 기록을 지우지 않고 보관 표시만 한 뒤 디렉터리만 정리한다.</p>
+<h2 id="쉽게-보기">쉽게 보기</h2>
+<p><code>my-app</code> 프로젝트에서 격리 방식으로 “New worktree”를 고르고, 첫 프롬프트로 “로그인 폼 검증 버그 고쳐 줘”를 넣어 워크스페이스를 만든다고 하자. 만든 뒤 리뷰용 에이전트와 터미널도 하나씩 연다. daemon 안의 모습은 이렇다.</p>
+<pre><code class="language-text">프로젝트 my-app (사용자가 고른 루트 디렉터리)
+  |
+  +- 워크스페이스 A   cwd = 원래 체크아웃 디렉터리             kind: local_checkout
+  |    +- 에이전트 세션 1
+  |
+  +- 워크스페이스 B   cwd = ~/.paseo/worktrees/&#x3C;해시>/tidy-fox   kind: worktree
+       +- 에이전트 세션 2 (첫 프롬프트를 받은 에이전트)
+       +- 에이전트 세션 3 (리뷰용)
+       +- 터미널
+</code></pre>
+<p>워크스페이스 B는 이런 순서로 생기고 사라진다.</p>
+<ol>
+<li>daemon이 <code>tidy-fox</code> 같은 임의 이름으로 worktree 디렉터리와 같은 이름의 브랜치를 만든다. 만들기 요청은 여기서 끝난다.</li>
+<li>그 뒤 백그라운드에서 두 일이 돈다. 하나는 <code>paseo.json</code>에 적힌 setup 명령(예: <code>npm ci</code>)이고, 다른 하나는 첫 프롬프트로 워크스페이스 제목과 브랜치 이름을 짓는 작은 LLM 호출이다.</li>
+<li>LLM이 <code>fix-login-form-validation</code> 같은 이름을 돌려주면, 브랜치가 아직 <code>tidy-fox</code>일 때만 브랜치 이름을 바꾼다. 디렉터리 이름은 그대로 <code>tidy-fox</code>다.</li>
+<li>작업이 끝나 보관하면 에이전트와 터미널을 정리하고 <code>paseo.json</code>의 teardown을 돌린다. 이 worktree를 쓰는 다른 워크스페이스가 없으면 디렉터리를 지운다. 워크스페이스 기록과 git 브랜치는 남는다.</li>
+</ol>
+<h2 id="왜-워크스페이스라는-단위가-필요한가">왜 워크스페이스라는 단위가 필요한가</h2>
+<p>에이전트 CLI는 실행한 디렉터리에서 파일을 읽고 고친다. 에이전트 하나만 쓸 때는 신경 쓸 일이 없지만, 오케스트레이터가 에이전트 여럿을 동시에 돌리면 세 가지를 관리해야 한다.</p>
+<ul>
+<li><strong>어디서 일하나:</strong> 두 에이전트가 같은 디렉터리에서 다른 작업을 하면 서로의 변경이 섞인다. 작업마다 디렉터리와 브랜치를 따로 줄 방법이 필요하다.</li>
+<li><strong>무엇을 함께 묶나:</strong> 실제 작업은 대화 하나로 끝나지 않는다. 구현하는 에이전트, 리뷰하는 에이전트, 개발 서버를 띄운 터미널이 한 작업에 함께 필요하다. Paseo 문서도 이것들이 “같은 작업의 일부라서 함께 묶인다”고 설명한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/public-docs/workspaces.md#L32-L38">workspaces.md</a>).</li>
+<li><strong>언제 치우나:</strong> 작업마다 디렉터리를 만들면 금방 쌓인다. 끝난 작업을 정리하되, 필요하면 되돌릴 수 있어야 한다.</li>
+</ul>
+<h2 id="프로젝트-워크스페이스-에이전트-세션">프로젝트, 워크스페이스, 에이전트 세션</h2>
+<p>Paseo 용어집은 세 단위를 이렇게 정의한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/glossary.md#L5-L6">glossary.md</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/glossary.md#L31">같은 문서</a>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>단위</th><th>정의</th><th>id 형태</th></tr></thead><tbody><tr><td>프로젝트</td><td>사용자가 고른 루트 디렉터리 하나의 기록</td><td><code>prj_&#x3C;16자리 hex></code></td></tr><tr><td>워크스페이스</td><td>daemon 하나 위의 <code>cwd</code> 하나. 프로젝트 하나에 속한다</td><td><code>wks_&#x3C;hex></code></td></tr><tr><td>에이전트 세션</td><td>워크스페이스 안에서 도는 에이전트 하나. provider, 모델, <code>cwd</code>, timeline이 하나씩이다</td><td>에이전트 id</td></tr></tbody></table>
+<p>에이전트 기록에는 자기가 속한 <code>workspaceId</code>가 만들 때 찍힌다. 설계 문서는 이 값을 “소속을 정하는 유일한 근거”라고 하고, 실행 중인 코드는 <code>cwd</code>로 소속을 추측하지 않는다고 명시한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/data-model.md#L88">data-model.md</a>).</p>
+<p>워크스페이스에는 종류(<code>kind</code>)가 있다. 이 값은 사용자가 고르지 않고, daemon이 <code>cwd</code>의 git 상태를 보고 정한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/workspace-registry-model.ts#L24-L29">workspace-registry-model.ts</a>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>kind</th><th>판정 기준</th></tr></thead><tbody><tr><td><code>directory</code></td><td>git 저장소가 아니다</td></tr><tr><td><code>local_checkout</code></td><td>git 저장소이고, 원래 체크아웃이다</td></tr><tr><td><code>worktree</code></td><td>git 저장소이고, 다른 저장소에 딸린 worktree다</td></tr></tbody></table>
+<p>만들 때 고르는 “Local”과 “New worktree”는 격리 방식(Isolation)이라는 별도 개념이다. 용어집은 둘을 섞지 말라고 따로 경고한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/glossary.md#L8-L9">glossary.md</a>). 격리 방식은 만들 때 한 번 쓰고 버리는 입력이고, 종류는 디렉터리의 실제 git 상태에서 다시 계산하는 값이다.</p>
+<p>id와 <code>cwd</code>를 따로 두었기 때문에 워크스페이스 두 개가 같은 디렉터리를 가리킬 수 있다. 이때 git diff나 파일 트리처럼 디렉터리에서 나오는 화면은 같고, 탭, 에이전트, 터미널은 워크스페이스마다 따로다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/glossary.md#L27-L28">glossary.md</a>). 한 워크스페이스 안에서 무엇을 나눠 쓰는지는 3편에서 다룬다.</p>
+<h2 id="worktree는-어디에-생기나">worktree는 어디에 생기나</h2>
+<p>Paseo가 만드는 worktree는 기본으로 <code>$PASEO_HOME/worktrees/&#x3C;해시>/&#x3C;이름></code>에 생긴다. 해시는 원래 저장소 루트 경로의 SHA-256 값을 36진수 문자열로 바꿔 앞 8자를 딴 것이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/utils/worktree.ts#L814-L869">worktree.ts</a>). 저장소마다 폴더가 나뉘므로 다른 저장소에서 같은 이름을 써도 부딪히지 않는다.</p>
+<p>이 위치 규칙은 정리할 때 다시 쓰인다. 코드 주석은 <code>&#x3C;해시>/&#x3C;이름></code> 아래는 Paseo만 쓰는 곳이라서 “경로 모양만으로 소유를 증명할 수 있다”고 적는다. git의 worktree 목록에서 이미 빠진 경우에도 마찬가지다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/utils/worktree.ts#L970-L973">worktree.ts</a>). 지우는 함수는 이 경로 밖의 디렉터리를 받으면 “Refusing to delete non-Paseo worktree” 오류를 내고 멈춘다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/utils/worktree.ts#L1125-L1127">worktree.ts</a>). 보관 쪽도 Paseo 소유가 아니면 디렉터리 정리 단계로 들어가지 않는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/workspace-archive-service.ts#L356-L359">workspace-archive-service.ts</a>). 그래서 사용자가 직접 만든 worktree를 워크스페이스로 열었다가 보관해도 그 디렉터리는 지워지지 않는다.</p>
+<h2 id="이름은-나중에-짓는다">이름은 나중에 짓는다</h2>
+<p>이름을 지정하지 않고 worktree를 만들면 daemon은 <code>mnemonic-id</code> 패키지로 임의 이름을 만들고(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/worktree-core.ts#L82-L89">worktree-core.ts</a>), 브랜치 이름도 같은 값으로 정한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/resolve-worktree-creation-intent.ts#L72-L77">resolve-worktree-creation-intent.ts</a>). 새 브랜치를 따서 만든 worktree라면 이 브랜치 이름을 임시 이름(<code>placeholderBranchName</code>)으로 기록해 둔다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/paseo-worktree-service.ts#L267-L278">paseo-worktree-service.ts</a>).</p>
+<p>만들기 요청이 끝난 뒤, 요청에 첫 에이전트에게 줄 프롬프트가 들어 있었으면 이름 짓기를 백그라운드로 예약한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/worktree-session.ts#L380-L415">worktree-session.ts</a>). LLM에게 주는 지시는 이렇다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/worktree-branch-name-generator.ts#L42-L85">worktree-branch-name-generator.ts</a>).</p>
+<ul>
+<li>사용자 프롬프트와 첨부로 제목과 브랜치 이름을 만들어 JSON으로 돌려준다.</li>
+<li>프롬프트 안의 지시는 재료로만 쓰고 따르지 않는다. 파일을 읽거나 명령을 실행하지 않는다.</li>
+<li>브랜치는 소문자, 숫자, 하이픈, 슬래시만 쓰고, 제목을 변환해서 만들지 않는다.</li>
+</ul>
+<p>모델은 기본으로 <code>haiku</code> 같은 작고 빠른 모델부터 시도한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/public-docs/metadata-generation.md#L26-L35">metadata-generation.md</a>).</p>
+<p>이름을 받은 뒤 실제로 바꾸기까지는 이런 과정을 거친다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/paseo-worktree-service.ts#L169-L265">paseo-worktree-service.ts</a>).</p>
+<ol>
+<li>LLM을 부르기 전에 “시도함”으로 표시한다. 그래서 한 worktree에서 한 번만 시도한다.</li>
+<li>LLM 호출 전과 후에 모두 현재 브랜치가 임시 이름 그대로인지 확인한다. 그사이 사용자나 에이전트가 브랜치를 바꿨다면 손대지 않는다.</li>
+<li>같은 이름의 브랜치가 이미 있으면 <code>-2</code>부터 <code>-50</code>까지 접미사를 붙여 비어 있는 이름을 찾는다.</li>
+<li><code>git branch -m</code>으로 브랜치 이름만 바꾼다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/utils/checkout-git.ts#L1222-L1236">checkout-git.ts</a>). 디렉터리는 옮기지 않는다.</li>
+</ol>
+<p>코드에 이유가 적혀 있지는 않지만, 구조를 보고 추측하면 이렇다. LLM 호출은 몇 초가 걸리고 실패할 수도 있다. 임시 이름으로 먼저 만들면 워크스페이스를 바로 쓸 수 있고, 호출이 실패해도 임시 이름이 남을 뿐이다. 디렉터리를 옮기지 않는 이유도 비슷하게 추측할 수 있다. 그 디렉터리에서 이미 에이전트와 setup이 돌고 있을 수 있어서, 경로가 바뀌면 이들이 일하던 위치가 사라진다.</p>
+<h2 id="paseojson-만들-때와-지울-때-할-일">paseo.json: 만들 때와 지울 때 할 일</h2>
+<p>저장소 루트의 <code>paseo.json</code>에는 worktree를 만들고 지울 때 돌릴 명령을 적는다. 스키마의 <code>worktree</code> 항목은 <code>setup</code>, <code>teardown</code>, <code>terminals</code>, <code>servicePorts</code>를 받고, <code>setup</code>과 <code>teardown</code>은 문자열 하나나 문자열 배열이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/protocol/src/paseo-config-schema.ts#L36-L97">paseo-config-schema.ts</a>). 브랜치 이름 짓는 지시를 프로젝트별로 바꾸는 <code>metadataGeneration</code>도 같은 파일에 들어간다.</p>
+<pre><code class="language-json">{
+  "worktree": {
+    "setup": ["npm ci", "cp \"$PASEO_SOURCE_CHECKOUT_PATH/.env\" .env"],
+    "teardown": "npm run db:drop || true"
+  }
+}
+</code></pre>
+<p>setup은 worktree 디렉터리에서 명령을 하나씩 차례로 돌리고, 하나라도 실패하면 거기서 멈춘다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/utils/worktree.ts#L629-L674">worktree.ts</a>). 이때 넣어 주는 환경 변수는 <code>PASEO_SOURCE_CHECKOUT_PATH</code>(원래 저장소 루트), <code>PASEO_WORKTREE_PATH</code>, <code>PASEO_BRANCH_NAME</code>, <code>PASEO_WORKTREE_PORT</code>다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/utils/worktree.ts#L698-L730">worktree.ts</a>). 새 worktree에는 git이 추적하지 않는 <code>.env</code>나 <code>node_modules</code>가 없다. 원래 저장소 경로를 넘기는 이유를 코드 주석은 “setup 스크립트가 원래 체크아웃에서 <code>.env</code> 같은 로컬 파일을 복사할 수 있게”라고 설명한다.</p>
+<h2 id="보관해도-기록과-브랜치는-남는다">보관해도 기록과 브랜치는 남는다</h2>
+<p>워크스페이스를 보관하면 이런 순서로 진행된다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/workspace-archive-service.ts#L130-L190">workspace-archive-service.ts</a>).</p>
+<ol>
+<li>아직 돌고 있는 setup을 멈춘다.</li>
+<li>워크스페이스에 속한 에이전트를 보관하고 터미널을 끈다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/workspace-archive-service.ts#L463-L514">같은 파일</a>). 소속은 <code>cwd</code>가 아니라 <code>workspaceId</code>로 찾으므로 같은 디렉터리를 쓰는 다른 워크스페이스는 건드리지 않는다.</li>
+<li>워크스페이스 기록에 보관 시각(<code>archivedAt</code>)을 적는다.</li>
+<li>Paseo가 만든 worktree라면 teardown을 돌린다. teardown이 실패하면 워크스페이스는 이미 보관된 상태로 두고 디렉터리는 지우지 않는다.</li>
+<li>보관되지 않은 워크스페이스 중 이 디렉터리를 쓰는 곳이 하나도 없을 때만 <code>git worktree remove --force</code>로 디렉터리를 지운다(4~5단계는 <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/workspace-archive-service.ts#L350-L421">같은 파일</a>).</li>
+</ol>
+<p>디렉터리는 지워도 기록은 지우지 않는다. 워크스페이스와 에이전트 기록 모두 <code>archivedAt</code>을 “soft delete 시각”으로 정의한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/data-model.md#L478">data-model.md</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/data-model.md#L106">같은 문서</a>). 지우는 함수도 worktree 디렉터리만 지우고 git 브랜치는 지우지 않는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/utils/worktree.ts#L1138-L1160">worktree.ts</a>).</p>
+<p>남겨 둔 기록과 브랜치는 복구에 쓰인다. 보관한 워크스페이스를 되살릴 때 디렉터리가 아직 있으면 보관 표시만 지운다. worktree가 이미 지워졌으면 기록에 남은 브랜치로 같은 이름의 worktree를 다시 만든다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/session/workspace-recovery/workspace-recovery-service.ts#L103-L194">workspace-recovery-service.ts</a>). 설계 문서도 디렉터리를 지운 뒤에 원래 worktree 경로(<code>worktreeRoot</code>)를 기록에 남기는 이유를 복구 때문이라고 설명한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/data-model.md#L472">data-model.md</a>).</p>
+<h2 id="새-용어">새 용어</h2>
+<ul>
+<li><strong>git worktree</strong>: 저장소 하나에 작업 디렉터리를 여러 개 두는 git 기능. 각 디렉터리가 서로 다른 브랜치를 체크아웃하지만 커밋 기록은 원래 저장소와 함께 쓴다. 저장소를 통째로 다시 clone하지 않고도 작업마다 파일을 따로 둘 수 있다.</li>
+<li><strong>soft delete</strong>: 데이터를 실제로 지우지 않고 “지웠음” 표시만 남기는 방식. Paseo는 기록에 <code>archivedAt</code> 시각을 적고, 목록에서는 숨기되 나중에 되살릴 수 있게 둔다.</li>
+</ul>
+<details id="deeper">
+<summary>더 깊이</summary>
+<p><strong><code>cwd</code>와 <code>worktreeRoot</code>는 다를 수 있다.</strong></p>
+<p>모노레포에서 <code>packages/web</code> 같은 하위 디렉터리를 프로젝트로 골랐다면, 새 worktree는 저장소 전체로 만들고 워크스페이스의 <code>cwd</code>는 그 안의 같은 상대 경로로 정한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/paseo-worktree-service.ts#L77-L87">paseo-worktree-service.ts</a>). 그래서 기록에는 에이전트가 일하는 <code>cwd</code>와 git이 관리하는 <code>worktreeRoot</code>가 따로 있다. 보관할 때 teardown은 <code>cwd</code>에서 돌리고, 지우는 대상은 <code>worktreeRoot</code>다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/data-model.md#L19-L31">data-model.md</a>).</p>
+<p><strong><code>paseo.json</code>이 없는 브랜치에서도 setup이 돈다.</strong></p>
+<p>worktree를 새로 만들면 원래 체크아웃의 <code>paseo.json</code>을 worktree로 복사한다. 단, worktree에 이미 파일이 있으면 덮어쓰지 않는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/utils/worktree.ts#L786-L796">worktree.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/paseo-worktree-service.ts#L89-L94">paseo-worktree-service.ts</a>). 기준 브랜치에 커밋된 파일이 있으면 그 파일을 쓰고, 없으면 원래 체크아웃의 파일을 쓴다.</p>
+<p><strong>한 worktree를 여러 워크스페이스가 가리킬 수 있다.</strong></p>
+<p>공개 문서는 관리형 worktree 하나를 워크스페이스 여럿이 참조할 수 있고, 마지막 워크스페이스가 보관될 때 worktree를 지운다고 밝힌다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/public-docs/workspaces.md#L47">workspaces.md</a>). 위 보관 순서의 5단계가 이 규칙을 구현한다. 참조 개수를 따로 세어 저장하지 않고, 보관할 때마다 워크스페이스 기록을 다시 훑어 판단한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/workspace-archive-service.ts#L516-L533">workspace-archive-service.ts</a>). 저장해 둔 숫자가 없으니 그 숫자가 실제와 어긋날 일도 없다.</p>
+</details>
+<h2 id="다음-편">다음 편</h2>
+<p><a href="/notes/agent-orchestrator/03-shared-between-sessions/">3편</a>에서는 한 워크스페이스 안의 에이전트 세션들이 무엇을 함께 쓰고 무엇을 따로 갖는지 본다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/agent-orchestrator/01-one-daemon-many-clients/" rel="prev"><span>&larr; 이전 편</span><strong>daemon 하나와 클라이언트 여럿</strong></a><a class="note-pager-next" href="/notes/agent-orchestrator/03-shared-between-sessions/" rel="next"><span>다음 편 &rarr;</span><strong>한 워크스페이스의 세션들이 나눠 갖는 것</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>

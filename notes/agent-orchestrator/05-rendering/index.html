@@ -1,0 +1,184 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="Paseo는 화면 코드 하나(Expo)로 iOS, Android, 웹, 데스크톱을 만들고, 플랫폼마다 크게 다른 부분만 파일을 나눠 따로 구현한다. 터미널 해석과 diff 색칠은 daemon이 맡는다. 터미널의 현재 화면은 daemon이 따로 띄운 터미널 worker 프로세스 안의 터미널 에뮬레이터가 들고 있고, diff 색칠은 daemon이 파일 전체를 읽어 끝낸 뒤 토큰으로 보낸다. 클라이언트는 받은 것을 자기 화면에 그린다."><title>터미널, 파일, diff를 여러 기기에 그리기 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="터미널, 파일, diff를 여러 기기에 그리기"><meta property="og:description" content="Paseo는 화면 코드 하나(Expo)로 iOS, Android, 웹, 데스크톱을 만들고, 플랫폼마다 크게 다른 부분만 파일을 나눠 따로 구현한다. 터미널 해석과 diff 색칠은 daemon이 맡는다. 터미널의 현재 화면은 daemon이 따로 띄운 터미널 worker 프로세스 안의 터미널 에뮬레이터가 들고 있고, diff 색칠은 daemon이 파일 전체를 읽어 끝낸 뒤 토큰으로 보낸다. 클라이언트는 받은 것을 자기 화면에 그린다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-orchestrator/05-rendering/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
+          if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
+          function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.C9DTDZbb.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 05-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-오케스트레이터가-화면-그리기를-고민해야-하나">왜 오케스트레이터가 화면 그리기를 고민해야 하나</a><a href="#화면-코드는-하나-다른-부분만-파일을-나눈다">화면 코드는 하나, 다른 부분만 파일을 나눈다</a><a href="#터미널-현재-화면은-daemon이-들고-있다">터미널: 현재 화면은 daemon이 들고 있다</a><a href="#파일과-diff-색칠은-누가-하나">파일과 diff: 색칠은 누가 하나</a><a href="#눈여겨볼-설계-선택">눈여겨볼 설계 선택</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 05 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="터미널, 파일, diff를 여러 기기에 그리기">터미널, 파일, diff를 여러 기기에 그리기<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="지난-편">지난 편</h2>
+<p><a href="/notes/agent-orchestrator/04-providers/">4편</a>에서 daemon이 서로 다른 에이전트 CLI를 구조화된 프로토콜로 연결하고, 그 출력을 하나의 진행 기록(timeline) 형식으로 맞추는 방식을 봤다. 이번 편은 반대쪽 끝, 클라이언트가 그 결과를 화면에 그리는 방식을 본다.</p>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>Paseo는 화면 코드 하나(Expo)로 iOS, Android, 웹, 데스크톱을 만들고, 플랫폼마다 크게 다른 부분만 파일을 나눠 따로 구현한다. 터미널 해석과 diff 색칠은 daemon이 맡는다. 터미널의 현재 화면은 daemon이 따로 띄운 터미널 worker 프로세스 안의 터미널 에뮬레이터가 들고 있고, diff 색칠은 daemon이 파일 전체를 읽어 끝낸 뒤 토큰으로 보낸다. 클라이언트는 받은 것을 자기 화면에 그린다.</p>
+<h2 id="쉽게-보기">쉽게 보기</h2>
+<p>데스크톱에서 워크스페이스 터미널에 <code>npm run dev</code>를 띄워 두고 나왔다고 하자. 휴대폰에서 그 터미널 탭을 열면 이미 쌓인 서버 로그가 바로 보이고, 새 로그가 이어서 올라온다. 휴대폰은 터미널이 시작될 때 연결돼 있지 않았는데도 지금 화면을 안다.</p>
+<pre><code class="language-text">[daemon -> 터미널 worker 프로세스]
+  PTY (셸과 npm run dev가 도는 가상 터미널)
+    | 출력 바이트
+    v
+  headless xterm: 바이트를 해석해 "지금 화면"(글자, 색, 커서)을 들고 있다
+    |
+    | (1) 붙자마자 지금 화면을 한 번에 보낸다 (restore)
+    | (2) 그다음 새 출력 바이트를 그대로 이어서 보낸다
+    v
+[웹, 데스크톱]  xterm.js가 받아서 DOM에 그린다
+[iOS, Android]  앱 안의 headless xterm이 해석하고 React Native Text로 그린다
+</code></pre>
+<p>daemon은 터미널을 별도 worker 프로세스에서 돌린다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/worker-terminal-manager.ts#L142">worker-terminal-manager.ts</a>). 이 worker는 터미널 출력을 클라이언트에 보내기만 하지 않는다. 화면 없이 상태만 계산하는 터미널 에뮬레이터(headless xterm)에도 같은 출력을 넣어, 아무도 보고 있지 않을 때도 현재 화면을 유지한다. 나중에 붙은 휴대폰은 이 상태를 먼저 받고, 그 뒤 출력을 이어받는다.</p>
+<h2 id="왜-오케스트레이터가-화면-그리기를-고민해야-하나">왜 오케스트레이터가 화면 그리기를 고민해야 하나</h2>
+<p>에이전트 CLI 하나만 쓸 때는 터미널 앱이 화면을 다 그려 준다. 오케스트레이터는 사정이 다르다.</p>
+<ul>
+<li>같은 터미널과 diff를 여러 기기가 동시에 본다. 늦게 붙은 기기도 지금 상태를 바로 그려야 한다.</li>
+<li>기기마다 그리는 기술이 다르다. 브라우저에는 DOM이 있고, 휴대폰 앱에는 DOM이 없다.</li>
+<li>휴대폰은 CPU와 배터리, 네트워크가 데스크톱보다 약하다.</li>
+</ul>
+<p>그래서 두 가지를 정해야 한다. 화면 코드를 기기마다 따로 짤 것인가, 그리고 터미널 제어 문자 해석이나 문법 색칠 같은 무거운 일을 어디서 할 것인가.</p>
+<h2 id="화면-코드는-하나-다른-부분만-파일을-나눈다">화면 코드는 하나, 다른 부분만 파일을 나눈다</h2>
+<p><a href="/notes/agent-orchestrator/01-one-daemon-many-clients/">1편</a>에서 데스크톱 앱이 Expo 웹 빌드를 Electron으로 감싼 것이라고 했다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/architecture.md#L40-L42">architecture.md</a>).</p>
+<p>코드가 하나여도 플랫폼마다 구현이 크게 다른 부분은 있다. Paseo는 이런 부분을 <code>if (isWeb)</code> 분기 대신 파일 이름으로 나눈다. <code>terminal-emulator.tsx</code>와 <code>terminal-emulator.native.tsx</code>를 함께 두면 Expo의 번들러 Metro가 빌드할 때 플랫폼에 맞는 파일을 고르고, 쓰지 않는 쪽 코드는 번들에 넣지 않는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/CLAUDE.md#L179-L185">CLAUDE.md</a>). 데스크톱은 Metro에게는 웹 플랫폼이지만, 빌드 때 <code>PASEO_WEB_PLATFORM=electron</code>을 주면 <code>.electron.tsx</code> 파일을 먼저 찾는다. 그래서 Electron에서만 쓸 수 있는 기능은 이 이름의 파일에 따로 구현한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/CLAUDE.md#L186-L193">CLAUDE.md</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/metro.config.cjs#L54-L59">metro.config.cjs</a>).</p>
+<p>이번 편의 세 화면은 이렇게 나뉜다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>화면</th><th>웹, 데스크톱</th><th>iOS, Android</th></tr></thead><tbody><tr><td>터미널</td><td>xterm.js</td><td>앱 안의 headless xterm과 React Native <code>Text</code></td></tr><tr><td>파일</td><td>CodeMirror 편집기(1 MiB 이하 파일)</td><td>읽기 전용 보기</td></tr><tr><td>diff</td><td>Canvas 2D로 그림</td><td>Skia로 그림</td></tr></tbody></table>
+<h2 id="터미널-현재-화면은-daemon이-들고-있다">터미널: 현재 화면은 daemon이 들고 있다</h2>
+<p>daemon의 터미널 코드는 PTY를 만드는 <code>node-pty</code>와 화면 없는 xterm인 <code>@xterm/headless</code>를 함께 불러온다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal.ts#L1-L2">terminal.ts</a>). 터미널을 만들 때 headless xterm을 하나 만들고(스크롤백 1000줄), PTY 출력이 나올 때마다 이 xterm에도 쓴다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal.ts#L1015-L1021">terminal.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal.ts#L1253-L1290">terminal.ts</a>). 출력이 클라이언트까지 가는 전체 경로는 성능 문서에 정리돼 있다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/terminal-performance.md#L7-L16">terminal-performance.md</a>).</p>
+<p>클라이언트가 터미널을 구독하면 daemon은 headless xterm의 현재 상태를 ANSI 텍스트(색과 커서 위치를 담은 터미널 제어 문자열)로 다시 써서 한 번에 보낸다. 앱은 보이는 화면 위로 스크롤백 200줄까지 요청한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal-restore.ts#L66-L75">terminal-restore.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/terminal/runtime/terminal-restore-options.ts#L3-L22">terminal-restore-options.ts</a>). 클라이언트는 이 restore 데이터를 일반 출력과 똑같이 자기 에뮬레이터에 넣는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/client/src/daemon-client.ts#L6834-L6843">daemon-client.ts</a>). 그 뒤에는 restore 시점 이후의 출력만 이어서 보낸다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal-session-controller.ts#L996-L1009">terminal-session-controller.ts</a>).</p>
+<p>터미널 데이터는 JSON으로 감싸지 않는다. WebSocket 바이너리 메시지 하나는 종류 1바이트와 터미널 번호 1바이트 뒤에 출력 바이트를 그대로 붙인 모양이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/protocol/src/binary-frames/terminal.ts#L10-L16">terminal.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/protocol/src/binary-frames/terminal.ts#L65-L76">terminal.ts</a>). 출력이 몰리면 5ms 동안 모아 한 번에 보낸다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal-output-coalescer.ts#L19">terminal-output-coalescer.ts</a>). 다만 한동안 조용하던 터미널의 첫 출력은 기다리지 않고 바로 보낸다. 키 입력 에코가 5ms씩 늦지 않게 하려는 것이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/terminal-performance.md#L22">terminal-performance.md</a>).</p>
+<p>휴대폰 앱은 WebView로 웹 화면을 띄우지 않는다. 앱 안에서도 <code>@xterm/headless</code>로 바이트를 해석하고(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/terminal/native-renderer/headless-terminal-state.ts#L334-L343">headless-terminal-state.ts</a>), 해석된 화면을 같은 스타일 글자끼리 묶어 React Native의 <code>View</code>와 <code>Text</code>로 그린다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/terminal/native-renderer/terminal-grid-view.native.tsx#L102-L130">terminal-grid-view.native.tsx</a>). 해석은 웹과 같은 xterm.js 계열 코드가 하고, 그리는 부분만 네이티브 뷰로 바꾼 셈이다.</p>
+<h2 id="파일과-diff-색칠은-누가-하나">파일과 diff: 색칠은 누가 하나</h2>
+<p><strong>파일 보기</strong>는 플랫폼에 따라 기능이 다르다. 웹과 데스크톱은 1 MiB 이하 파일을 CodeMirror 편집기로 열어 고칠 수 있고, 휴대폰은 모든 파일을 읽기 전용으로 보여 준다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/file-panels/source/panel.tsx#L67-L79">panel.tsx</a>). 문법 색칠을 하는 크기 한도도 휴대폰이 더 작다. 웹은 10 MiB, 휴대폰은 1 MiB까지 색칠하고, 그보다 크면 색 없이 보여 준다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/file-panels/source/readonly/presentation.ts#L1-L4">presentation.ts</a>). 파일 보기의 색칠은 앱이 한다. 한 번에 12ms까지만 색칠하고 나머지 시간은 입력 처리와 화면 그리기에 남겨, 큰 파일에서도 화면이 멈추지 않게 한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/file-panels/source/readonly/source-lines.ts#L1-L4">source-lines.ts</a>).</p>
+<p><strong>git diff</strong>는 daemon이 색칠까지 끝내서 보낸다. 이때 diff에 실린 줄만 보지 않고 파일 전체를 본다. diff 줄만으로는 문법을 정확히 알 수 없기 때문이다.</p>
+<pre><code class="language-text">diff에 실린 부분만 보면              파일 전체를 보면
+
+@@ -40,3 +40,3 @@                    38  /*
+   if (cached) {                     39   * 예전 구현:
+-    return value;                   40   if (cached) {
++    return value ?? fallback;       41      return value ?? fallback;
+   }                                 42   }
+                                     43   */
+-> 코드처럼 색칠한다                -> 주석이므로 주석 색으로 칠한다
+</code></pre>
+<p>daemon은 바뀌기 전 파일과 바뀐 뒤 파일을 통째로 읽어 각각 색칠한 다음, diff의 각 줄에 해당 줄 번호의 토큰을 붙인다. 코드 주석도 “실제 파일 내용을 쓰면 파서가 더 많은 맥락을 얻는다”고 적는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/utils/diff-highlighter.ts#L383-L416">diff-highlighter.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/utils/diff-highlighter.ts#L436-L472">diff-highlighter.ts</a>). 휴대폰이 같은 일을 하려면 diff 외에 두 버전의 파일 전체를 받아야 하므로, 파일이 이미 디스크에 있는 daemon에서 하면 비용이 적게 든다. 이 마지막 판단은 코드 구조를 보고 한 추측이다.</p>
+<p>보내는 토큰은 <code>{ text, style }</code> 모양이고, <code>style</code>은 색 값이 아니라 <code>keyword</code>, <code>comment</code> 같은 역할 이름이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/highlight/src/types.ts#L1-L26">types.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/protocol/src/messages.ts#L2749-L2758">messages.ts</a>). 어떤 색으로 칠할지는 클라이언트가 자기 테마로 정한다. daemon이 색칠하는 크기와 시간에도 한도가 있다. 768KB를 넘는 파일은 통째로 색칠하지 않고, 색칠하는 동안 4ms마다 이벤트 루프에 차례를 넘긴다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/highlight/src/budgeted-highlighter.ts#L6-L7">budgeted-highlighter.ts</a>). 터미널 출력과 에이전트 스트림도 daemon의 같은 이벤트 루프에서 처리되므로, 색칠이 그 일을 막으면 안 된다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/terminal-performance.md#L18">terminal-performance.md</a>).</p>
+<p>토큰을 받은 뒤 diff 화면을 배치하는 모델은 플랫폼끼리 같고, 그리는 부분만 다르다. 웹은 <code>&#x3C;canvas></code>의 Canvas 2D API로, 휴대폰은 Skia(React Native용 2D 그래픽 라이브러리)로 그린다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/git/diff-document/paint.web.ts#L36-L55">paint.web.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/git/diff-document/paint.native.ts#L1-L10">paint.native.ts</a>).</p>
+<h2 id="눈여겨볼-설계-선택">눈여겨볼 설계 선택</h2>
+<p><strong>터미널 크기는 마지막으로 만진 클라이언트가 정한다.</strong> PTY의 크기(행과 열)는 하나뿐인데, 데스크톱 창과 휴대폰 화면의 폭은 다르다. Paseo는 사용자가 터미널을 누르거나 포커스하거나 창 크기를 실제로 바꾼 클라이언트만 크기를 요청(<code>claim</code>)할 수 있게 한다. 붙기만 하거나 보고만 있는 클라이언트는 크기를 바꾸지 않는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/architecture.md#L318">architecture.md</a>). daemon은 마지막 <code>claim</code>의 주인을 기억하고, 다른 연결이 보낸 <code>update</code>는 무시한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal-size-ownership.ts#L11-L30">terminal-size-ownership.ts</a>). 그래서 책상 위에 켜 둔 휴대폰이 데스크톱 터미널을 좁히는 일이 없다.</p>
+<p><strong>클라이언트의 xterm은 그리기만 한다.</strong> <code>nvim</code> 같은 프로그램은 실행 중에 터미널에게 “커서가 어디 있나”, “어떤 기능을 지원하나”를 묻는다. 이 질문에는 daemon의 headless xterm만 답하고(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal.ts#L1102-L1141">terminal.ts</a>), 브라우저의 xterm은 같은 질문을 받아도 답하지 않게 막아 둔다. 코드 주석이 밝힌 이유는 이렇다. daemon은 PTY와 프로세스 하나만 사이에 두고 있어서, 질문한 프로그램이 끝나기 전에 답이 도착한다. 브라우저가 답하면 그 답은 WebSocket을 거쳐 돌아와야 해서 늦게 도착할 수 있다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/terminal/runtime/terminal-emulator-runtime.ts#L602-L604">terminal-emulator-runtime.ts</a>). 클라이언트가 여럿 붙어 있어도 답은 한 번만 나간다.</p>
+<p><strong>색칠 엔진은 하나다.</strong> daemon의 diff 색칠, 앱의 파일 보기, 웹 편집기 CodeMirror의 색 규칙이 모두 <code>@getpaseo/highlight</code> 패키지에서 나온다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/highlight/src/index.ts#L1-L18">index.ts</a>). 이 패키지는 CodeMirror가 쓰는 파서 Lezer 위에 만들어져 있다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/highlight/src/highlighter.ts#L1-L2">highlighter.ts</a>). 엔진이 하나이므로 같은 코드는 diff, 파일 보기, 편집기 어디서든 같은 역할 이름으로 나뉜다.</p>
+<h2 id="새-용어">새 용어</h2>
+<ul>
+<li><strong>터미널 에뮬레이터</strong>: 프로그램이 내보낸 바이트(글자와 제어 문자)를 해석해 몇 행 몇 열에 어떤 글자가 어떤 색으로 있는지, 커서가 어디 있는지를 계산하는 프로그램. 화면에 그리는 부분까지 포함하면 xterm.js, 계산만 하면 headless xterm이다.</li>
+<li><strong>하이라이팅 토큰</strong>: 코드 한 줄을 문법 역할이 같은 조각으로 나눈 것. Paseo에서는 <code>{ text: "return", style: "keyword" }</code>처럼 글자와 역할 이름의 쌍이고, 색은 클라이언트의 테마가 정한다.</li>
+</ul>
+<details id="deeper">
+<summary>더 깊이</summary>
+<p><strong>웹용 터미널 파일 첫 줄의 <code>"use dom"</code>.</strong></p>
+<p><code>terminal-emulator.tsx</code>는 <code>"use dom"</code>으로 시작한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/components/terminal-emulator.tsx#L1">terminal-emulator.tsx</a>). Expo 문서에 따르면 이 표시가 붙은 컴포넌트는 웹에서는 그냥 DOM으로 그려지고, 네이티브에서는 WebView 안에서 돈다(<a href="https://docs.expo.dev/guides/dom-components/">Expo DOM components</a>). Paseo는 같은 자리에 <code>terminal-emulator.native.tsx</code>를 두어 네이티브에서는 이 경로를 쓰지 않는다. 네이티브 쪽은 연결된 daemon이 입력 모드 복원을 지원하지 않으면 터미널 대신 “호스트를 업데이트하라”는 안내를 띄운다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/components/terminal-emulator.native.tsx#L26-L36">terminal-emulator.native.tsx</a>).</p>
+<p><strong>restore 이전의 방식.</strong></p>
+<p>바이너리 메시지 종류는 출력, 입력, 크기 변경, snapshot, restore 다섯 가지다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/protocol/src/binary-frames/terminal.ts#L10-L16">terminal.ts</a>). 설계 문서는 앞의 네 가지만 적고 있어 코드보다 조금 늦다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/architecture.md#L312-L316">architecture.md</a>). snapshot은 화면을 칸 단위 JSON(칸마다 글자, 색, 굵기 등을 담은 객체)으로 보내는 예전 방식이고, restore 옵션을 보내지 않는 오래된 클라이언트에게만 쓴다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal-session-controller.ts#L999-L1002">terminal-session-controller.ts</a>). restore는 같은 상태를 ANSI 텍스트로 바꿔 보내므로 클라이언트가 출력과 같은 경로로 처리할 수 있다. 칸 단위 JSON이 큰 출력에서 얼마나 무거웠는지는 성능 문서에 남아 있다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/terminal-performance.md#L26">terminal-performance.md</a>). 끊긴 클라이언트가 다시 따라잡는 과정은 6편에서 다룬다.</p>
+<p><strong>웹 터미널은 WebGL로 그린다.</strong></p>
+<p>브라우저의 xterm.js는 WebGL 렌더러 addon을 불러 GPU로 그린다. 불러오다 실패하거나 GPU 컨텍스트를 잃으면 이 addon을 내리고 xterm.js 기본 렌더러로 돌아간다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/terminal/runtime/terminal-emulator-runtime.ts#L625-L640">terminal-emulator-runtime.ts</a>).</p>
+<p><strong>채팅 안의 diff는 앱이 색칠한다.</strong></p>
+<p>에이전트가 파일을 고친 도구 호출을 채팅에서 펼치면 나오는 diff는 daemon이 아니라 앱이 색칠한다. diff 줄로 바뀌기 전과 뒤의 문서를 다시 만들고, 각각을 통째로 색칠해 줄마다 토큰을 붙인다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/utils/diff-highlight.ts#L32-L39">diff-highlight.ts</a>). 추측이지만, git diff와 달리 파일을 읽지 않고 에이전트 스트림에 실린 내용만으로 하므로 앱에서 해도 부담이 작다고 판단한 듯하다.</p>
+</details>
+<h2 id="다음-편">다음 편</h2>
+<p><a href="/notes/agent-orchestrator/06-mobile-sync/">6편</a>에서는 휴대폰 연결이 끊겼다 다시 붙어도 화면이 맞는 이유를 본다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/agent-orchestrator/04-providers/" rel="prev"><span>&larr; 이전 편</span><strong>서로 다른 에이전트를 하나처럼 다루기</strong></a><a class="note-pager-next" href="/notes/agent-orchestrator/06-mobile-sync/" rel="next"><span>다음 편 &rarr;</span><strong>끊겼다 붙어도 화면이 맞는 이유</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html>
