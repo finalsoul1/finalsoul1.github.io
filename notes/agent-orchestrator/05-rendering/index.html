@@ -1,24 +1,27 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="Paseo는 화면 코드 하나(Expo)로 iOS, Android, 웹, 데스크톱을 만들고, 플랫폼마다 크게 다른 부분만 파일을 나눠 따로 구현한다. 터미널 해석과 diff 색칠은 daemon이 맡는다. 터미널의 현재 화면은 daemon이 따로 띄운 터미널 worker 프로세스 안의 터미널 에뮬레이터가 들고 있고, diff 색칠은 daemon이 파일 전체를 읽어 끝낸 뒤 토큰으로 보낸다. 클라이언트는 받은 것을 자기 화면에 그린다."><title>터미널, 파일, diff를 여러 기기에 그리기 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="터미널, 파일, diff를 여러 기기에 그리기"><meta property="og:description" content="Paseo는 화면 코드 하나(Expo)로 iOS, Android, 웹, 데스크톱을 만들고, 플랫폼마다 크게 다른 부분만 파일을 나눠 따로 구현한다. 터미널 해석과 diff 색칠은 daemon이 맡는다. 터미널의 현재 화면은 daemon이 따로 띄운 터미널 worker 프로세스 안의 터미널 에뮬레이터가 들고 있고, diff 색칠은 daemon이 파일 전체를 읽어 끝낸 뒤 토큰으로 보낸다. 클라이언트는 받은 것을 자기 화면에 그린다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-orchestrator/05-rendering/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
           if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
           function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
-        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.PjJ7CnqV.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 05-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-오케스트레이터가-화면-그리기를-고민해야-하나">왜 오케스트레이터가 화면 그리기를 고민해야 하나</a><a href="#화면-코드는-하나-다른-부분만-파일을-나눈다">화면 코드는 하나, 다른 부분만 파일을 나눈다</a><a href="#터미널-현재-화면은-daemon이-들고-있다">터미널: 현재 화면은 daemon이 들고 있다</a><a href="#파일과-diff-색칠은-누가-하나">파일과 diff: 색칠은 누가 하나</a><a href="#눈여겨볼-설계-선택">눈여겨볼 설계 선택</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 05 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="터미널, 파일, diff를 여러 기기에 그리기">터미널, 파일, diff를 여러 기기에 그리기<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.B4atWCcl.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 05-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-오케스트레이터가-화면-그리기를-고민해야-하나">왜 오케스트레이터가 화면 그리기를 고민해야 하나</a><a href="#화면-코드는-하나-다른-부분만-파일을-나눈다">화면 코드는 하나, 다른 부분만 파일을 나눈다</a><a href="#터미널-현재-화면은-daemon이-들고-있다">터미널: 현재 화면은 daemon이 들고 있다</a><a href="#파일과-diff-색칠은-누가-하나">파일과 diff: 색칠은 누가 하나</a><a href="#눈여겨볼-설계-선택">눈여겨볼 설계 선택</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 05 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="터미널, 파일, diff를 여러 기기에 그리기">터미널, 파일, diff를 여러 기기에 그리기<span>.</span></h1></div><script>document.documentElement.classList.add('diagrams-pending');</script><div class="note-body" data-pagefind-body>
 <h2 id="지난-편">지난 편</h2>
 <p><a href="/notes/agent-orchestrator/04-providers/">4편</a>에서 daemon이 서로 다른 에이전트 CLI를 구조화된 프로토콜로 연결하고, 그 출력을 하나의 진행 기록(timeline) 형식으로 맞추는 방식을 봤다. 이번 편은 반대쪽 끝, 클라이언트가 그 결과를 화면에 그리는 방식을 본다.</p>
 <h2 id="한-줄-결론">한 줄 결론</h2>
 <p>Paseo는 화면 코드 하나(Expo)로 iOS, Android, 웹, 데스크톱을 만들고, 플랫폼마다 크게 다른 부분만 파일을 나눠 따로 구현한다. 터미널 해석과 diff 색칠은 daemon이 맡는다. 터미널의 현재 화면은 daemon이 따로 띄운 터미널 worker 프로세스 안의 터미널 에뮬레이터가 들고 있고, diff 색칠은 daemon이 파일 전체를 읽어 끝낸 뒤 토큰으로 보낸다. 클라이언트는 받은 것을 자기 화면에 그린다.</p>
 <h2 id="쉽게-보기">쉽게 보기</h2>
 <p>데스크톱에서 워크스페이스 터미널에 <code>npm run dev</code>를 띄워 두고 나왔다고 하자. 휴대폰에서 그 터미널 탭을 열면 이미 쌓인 서버 로그가 바로 보이고, 새 로그가 이어서 올라온다. 휴대폰은 터미널이 시작될 때 연결돼 있지 않았는데도 지금 화면을 안다.</p>
-<pre><code class="language-text">[daemon -> 터미널 worker 프로세스]
-  PTY (셸과 npm run dev가 도는 가상 터미널)
-    | 출력 바이트
-    v
-  headless xterm: 바이트를 해석해 "지금 화면"(글자, 색, 커서)을 들고 있다
-    |
-    | (1) 붙자마자 지금 화면을 한 번에 보낸다 (restore)
-    | (2) 그다음 새 출력 바이트를 그대로 이어서 보낸다
-    v
-[웹, 데스크톱]  xterm.js가 받아서 DOM에 그린다
-[iOS, Android]  앱 안의 headless xterm이 해석하고 React Native Text로 그린다
+<pre><code class="language-mermaid">flowchart TB
+  subgraph worker["daemon이 띄운 터미널 worker 프로세스"]
+    direction TB
+    pty["PTY&#x3C;br/>셸과 npm run dev가 도는 가상 터미널"]
+    hx["headless xterm&#x3C;br/>바이트를 해석해 지금 화면&#x3C;br/>(글자, 색, 커서)을 들고 있다"]
+    pty -- "출력 바이트" --> hx
+  end
+  hx -- "(1) 붙자마자 지금 화면을 한 번에 (restore)&#x3C;br/>(2) 그다음 새 출력 바이트를 이어서" --> clients
+  subgraph clients["클라이언트"]
+    direction TB
+    web["웹, 데스크톱&#x3C;br/>xterm.js가 받아서 DOM에 그린다"]
+    mobile["iOS, Android&#x3C;br/>앱 안의 headless xterm이 해석하고&#x3C;br/>React Native Text로 그린다"]
+    web ~~~ mobile
+  end
 </code></pre>
 <p>daemon은 터미널을 별도 worker 프로세스에서 돌린다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/worker-terminal-manager.ts#L142">worker-terminal-manager.ts</a>). 이 worker는 터미널 출력을 클라이언트에 보내기만 하지 않는다. 화면 없이 상태만 계산하는 터미널 에뮬레이터(headless xterm)에도 같은 출력을 넣어, 아무도 보고 있지 않을 때도 현재 화면을 유지한다. 나중에 붙은 휴대폰은 이 상태를 먼저 받고, 그 뒤 출력을 이어받는다.</p>
 <h2 id="왜-오케스트레이터가-화면-그리기를-고민해야-하나">왜 오케스트레이터가 화면 그리기를 고민해야 하나</h2>
@@ -181,4 +184,4 @@
     dialog.addEventListener('close', () => openButton.focus());
     input.addEventListener('input', search);
   }
-</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.D2LzopZC.js"></script>
+</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.NUr_e7Be.js"></script>

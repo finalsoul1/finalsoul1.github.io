@@ -1,30 +1,35 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="요청 하나는 접수와 대기를 거쳐 토큰으로 잘린다. 서버는 prefill로 첫 토큰을 고른 뒤 decode로 한 토큰씩 이어 간다. 고른 토큰은 그때그때 보내고, <EOS>가 나오면 멈춘 뒤 KV 캐시 메모리를 비운다."><title>실제 요청 하나를 끝까지 따라가기 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="실제 요청 하나를 끝까지 따라가기"><meta property="og:description" content="요청 하나는 접수와 대기를 거쳐 토큰으로 잘린다. 서버는 prefill로 첫 토큰을 고른 뒤 decode로 한 토큰씩 이어 간다. 고른 토큰은 그때그때 보내고, <EOS>가 나오면 멈춘 뒤 KV 캐시 메모리를 비운다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/llm-inference/06-one-request/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
           if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
           function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
-        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.PjJ7CnqV.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">LLM에 보낸 질문이 답이 되기까지 / 06-07</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#deeper">더 깊이</a><a href="#출처">출처</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 06 / 2026.10.20</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="실제 요청 하나를 끝까지 따라가기">실제 요청 하나를 끝까지 따라가기<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.B4atWCcl.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">LLM에 보낸 질문이 답이 되기까지 / 06-07</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#deeper">더 깊이</a><a href="#출처">출처</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 06 / 2026.10.20</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="실제 요청 하나를 끝까지 따라가기">실제 요청 하나를 끝까지 따라가기<span>.</span></h1></div><script>document.documentElement.classList.add('diagrams-pending');</script><div class="note-body" data-pagefind-body>
 <h2 id="지난-편">지난 편</h2>
 <p><a href="/notes/llm-inference/05-faster-repetition/">5편</a>에서 입력 전체를 한꺼번에 계산하는 <a href="/notes/llm-inference/05-faster-repetition/">prefill</a>, 새 토큰 하나씩 계산하는 <a href="/notes/llm-inference/05-faster-repetition/">decode</a>, 앞의 계산 결과를 저장해 다시 쓰는 <a href="/notes/llm-inference/05-faster-repetition/">KV 캐시</a>를 봤다.</p>
 <h2 id="한-줄-결론">한 줄 결론</h2>
 <p>요청 하나는 접수와 대기를 거쳐 토큰으로 잘린다. 서버는 prefill로 첫 토큰을 고른 뒤 decode로 한 토큰씩 이어 간다. 고른 토큰은 그때그때 보내고, <code>&#x3C;EOS></code>가 나오면 멈춘 뒤 KV 캐시 메모리를 비운다.</p>
 <h2 id="쉽게-보기">쉽게 보기</h2>
-<p>1~5편의 예시 요청에 <code>"stream": true</code>만 더해 보낸다고 하자. 보낸 순간부터 답이 다 나올 때까지를 순서대로 놓으면 이렇다.</p>
-<pre><code class="language-text">단계                                      이 시점의 데이터 (가상 값)
-
-[클라이언트]
-  1. 질문을 보낸다                        "토마토는 과일이야?"
-[앱 서버]
-  2. 요청을 만들어 API로 보낸다           system + messages + "stream": true
-[API 서버]
-  3. API 키를 확인하고 차례를 기다린다
-[LLM 서버]
-  4. 토큰으로 자른다                      토큰 ID 16개
-  5. 다른 요청과 묶어 GPU에 올린다
-  6. prefill: 입력 16개를 한꺼번에 계산   [16, 3584] -> 캐시 16
-  7. 첫 토큰을 고른다                     네 (4512)
-  8. 고른 토큰을 바로 보낸다              "네"
-  9. decode: 한 토큰씩 반복               , -> 과일입니다. -> &#x3C;EOS>  캐시 17 -> 18 -> 19
- 10. &#x3C;EOS>가 나오면 멈춘다                stop_reason: "end_turn"
- 11. 자원을 정리한다                      KV 캐시 19토큰 분량을 비운다
+<p>1~5편의 예시 요청에 <code>"stream": true</code>만 더해 보낸다고 하자. 보낸 순간부터 답이 다 나올 때까지를 순서대로 놓으면 이렇다. 단계마다 둘째 줄은 그 시점의 데이터이고, 값은 모두 가상이다.</p>
+<pre><code class="language-mermaid">flowchart TB
+  subgraph client["클라이언트"]
+    s1["1. 질문을 보낸다&#x3C;br/>#quot;토마토는 과일이야?#quot;"]
+  end
+  subgraph app["앱 서버"]
+    s2["2. 요청을 만들어 API로 보낸다&#x3C;br/>system + messages&#x3C;br/>+ #quot;stream#quot;: true"]
+  end
+  subgraph api["API 서버"]
+    s3["3. API 키를 확인하고&#x3C;br/>차례를 기다린다"]
+  end
+  subgraph llm["LLM 서버"]
+    s4["4. 토큰으로 자른다&#x3C;br/>토큰 ID 16개"]
+    s5["5. 다른 요청과 묶어&#x3C;br/>GPU에 올린다"]
+    s6["6. prefill: 입력 16개를&#x3C;br/>한꺼번에 계산&#x3C;br/>[16, 3584] -> 캐시 16"]
+    s7["7. 첫 토큰을 고른다&#x3C;br/>네 (4512)"]
+    s8["8. 고른 토큰을 바로 보낸다&#x3C;br/>#quot;네#quot;"]
+    s9["9. decode: 한 토큰씩 반복&#x3C;br/>, -> 과일입니다. -> #lt;EOS#gt;&#x3C;br/>캐시 17 -> 18 -> 19"]
+    s10["10. #lt;EOS#gt;가 나오면 멈춘다&#x3C;br/>stop_reason: #quot;end_turn#quot;"]
+    s11["11. 자원을 정리한다&#x3C;br/>KV 캐시 19토큰 분량을 비운다"]
+    s4 --> s5 --> s6 --> s7 --> s8 --> s9 --> s10 --> s11
+  end
+  s1 --> s2 --> s3 --> s4
 </code></pre>
 <p>API 서버와 LLM 서버를 나눈 것은 설명용이다. Claude의 내부 구성, 입력 형식, 벡터 길이 같은 설정값은 공개되어 있지 않다. 그래서 서버 내부 동작(특히 5단계와 11단계)은 vLLM 같은 일반적인 서빙 엔진을, 입력 형식과 설정값은 공개 모델을 기준으로 설명한다.</p>
 <p><strong>1~2. 요청 만들기</strong> (<a href="/notes/llm-inference/02-text-to-numbers/">2편</a>). 앱 서버가 질문에 시스템 지침을 붙여 요청을 만든다. 2편의 요청에 <code>stream</code>만 더했고 <code>temperature</code> 같은 값은 넣지 않았다.</p>
@@ -188,4 +193,4 @@ event: message_stop
     dialog.addEventListener('close', () => openButton.focus());
     input.addEventListener('input', search);
   }
-</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.D2LzopZC.js"></script>
+</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.NUr_e7Be.js"></script>

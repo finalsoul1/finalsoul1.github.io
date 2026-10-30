@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="마지막 벡터로 어휘의 토큰마다 점수를 내고, 점수를 확률로 바꿔서 하나를 뽑는다."><title>다음 토큰 고르기 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="다음 토큰 고르기"><meta property="og:description" content="마지막 벡터로 어휘의 토큰마다 점수를 내고, 점수를 확률로 바꿔서 하나를 뽑는다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/llm-inference/04-picking-next-token/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
           if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
           function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
-        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.PjJ7CnqV.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">LLM에 보낸 질문이 답이 되기까지 / 04-07</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 04 / 2026.10.20</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="다음 토큰 고르기">다음 토큰 고르기<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.B4atWCcl.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">LLM에 보낸 질문이 답이 되기까지 / 04-07</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 04 / 2026.10.20</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="다음 토큰 고르기">다음 토큰 고르기<span>.</span></h1></div><script>document.documentElement.classList.add('diagrams-pending');</script><div class="note-body" data-pagefind-body>
 <h2 id="지난-편">지난 편</h2>
 <p><a href="/notes/llm-inference/03-mixing-context/">3편</a>에서 <a href="/notes/llm-inference/03-mixing-context/">레이어</a>를 여러 번 지나면 마지막 토큰 자리의 벡터에 지금까지의 문맥이 담기는 것을 봤다.</p>
 <h2 id="한-줄-결론">한 줄 결론</h2>
@@ -9,19 +9,14 @@
 <p>어휘는 <a href="/notes/llm-inference/02-text-to-numbers/">2편</a>에서 본 <a href="/notes/llm-inference/02-text-to-numbers/">토크나이저</a>의 토큰 목록 전체를 말한다.</p>
 <h2 id="쉽게-보기">쉽게 보기</h2>
 <p>3편 끝에서 위치 15 <code>&#x3C;assistant></code>의 벡터는 마지막 레이어를 지나 시스템 지침과 질문의 문맥을 담게 됐다. 모델은 이 벡터 하나로 다음 토큰을 고른다. 과정은 세 단계다.</p>
-<pre><code class="language-text">위치 15 &#x3C;assistant>의 마지막 벡터  [ 0.57, -0.30,  0.09, ...]   (3편의 가상 값)
-    |
-    | 1. 어휘의 토큰마다 점수를 하나씩 낸다
-    v
-점수(로짓)   네 5.00   아니 4.15   토마토는 -1.20   &#x3C;EOS> -4.00   ...
-    |
-    | 2. 점수를 확률로 바꾼다
-    v
-확률         네 0.70   아니 0.30   나머지 거의 0
-    |
-    | 3. 확률대로 하나를 뽑는다
-    v
-네 (토큰 ID 4512)
+<pre><code class="language-mermaid">flowchart TB
+  vec["위치 15 #lt;assistant#gt;의 마지막 벡터&#x3C;br/>[ 0.57, -0.30, 0.09, ...]&#x3C;br/>(3편의 가상 값)"]:::code
+  logits["점수(로짓)&#x3C;br/>네 5.00, 아니 4.15,&#x3C;br/>토마토는 -1.20, #lt;EOS#gt; -4.00, ..."]:::code
+  probs["확률&#x3C;br/>네 0.70, 아니 0.30, 나머지 거의 0"]:::code
+  pick["네 (토큰 ID 4512)"]
+  vec -- "1. 어휘의 토큰마다&#x3C;br/>점수를 하나씩 낸다" --> logits
+  logits -- "2. 점수를 확률로 바꾼다" --> probs
+  probs -- "3. 확률대로 하나를 뽑는다" --> pick
 </code></pre>
 <p>숫자는 모두 가상 값이고, 토큰 ID 4512는 2편 출력 표의 첫 토큰이다.</p>
 <p><strong>1. 점수 내기.</strong> 마지막 벡터에 학습된 숫자 표를 한 번 곱하면 어휘의 토큰마다 점수가 하나씩 나온다. 이 점수가 로짓이다. 공개 모델 Qwen2.5-7B라면 로짓이 152,064개 나온다(<a href="https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/config.json">config.json</a>의 <code>vocab_size</code>). 로짓이 높을수록 그 토큰이 다음 자리에 알맞다는 뜻이다. 끝 신호 <code>&#x3C;EOS></code>도 어휘의 한 항목이라서 똑같이 로짓을 받는다. 예시 답이라면 <code>과일입니다.</code> 다음 자리에서 <code>&#x3C;EOS></code>가 가장 높은 로짓을 받고, 이것이 뽑혀 반복이 멈춘다.</p>
@@ -181,4 +176,4 @@ softmax([5.0, 4.15], 0.5); // [0.84..., 0.15...]
     dialog.addEventListener('close', () => openButton.focus());
     input.addEventListener('input', search);
   }
-</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.D2LzopZC.js"></script>
+</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.NUr_e7Be.js"></script>
