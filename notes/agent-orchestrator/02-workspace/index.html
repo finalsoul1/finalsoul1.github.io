@@ -1,14 +1,14 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="워크스페이스는 daemon 하나 위의 작업 디렉터리(cwd) 하나에 id를 붙인 단위이고, 에이전트 세션은 모두 어떤 워크스페이스에 속한다. 디렉터리를 따로 떼어야 하면 Paseo는 git worktree를 만들고, 이름은 임시로 붙였다가 나중에 다시 짓는다. 다 쓴 워크스페이스는 기록을 지우지 않고 보관 표시만 한 뒤 디렉터리만 정리한다."><title>워크스페이스 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="워크스페이스"><meta property="og:description" content="워크스페이스는 daemon 하나 위의 작업 디렉터리(cwd) 하나에 id를 붙인 단위이고, 에이전트 세션은 모두 어떤 워크스페이스에 속한다. 디렉터리를 따로 떼어야 하면 Paseo는 git worktree를 만들고, 이름은 임시로 붙였다가 나중에 다시 짓는다. 다 쓴 워크스페이스는 기록을 지우지 않고 보관 표시만 한 뒤 디렉터리만 정리한다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-orchestrator/02-workspace/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
           if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
           function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
-        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.B4atWCcl.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 02-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-워크스페이스라는-단위가-필요한가">왜 워크스페이스라는 단위가 필요한가</a><a href="#프로젝트-워크스페이스-에이전트-세션">프로젝트, 워크스페이스, 에이전트 세션</a><a href="#worktree는-어디에-생기나">worktree는 어디에 생기나</a><a href="#이름은-나중에-짓는다">이름은 나중에 짓는다</a><a href="#paseojson-만들-때와-지울-때-할-일">paseo.json: 만들 때와 지울 때 할 일</a><a href="#보관해도-기록과-브랜치는-남는다">보관해도 기록과 브랜치는 남는다</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 02 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="워크스페이스">워크스페이스<span>.</span></h1></div><script>document.documentElement.classList.add('diagrams-pending');</script><div class="note-body" data-pagefind-body>
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.DWKgP8z-.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 02-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-워크스페이스라는-단위가-필요한가">왜 워크스페이스라는 단위가 필요한가</a><a href="#프로젝트-워크스페이스-에이전트-세션">프로젝트, 워크스페이스, 에이전트 세션</a><a href="#worktree는-어디에-생기나">worktree는 어디에 생기나</a><a href="#이름은-나중에-짓는다">이름은 나중에 짓는다</a><a href="#paseojson-만들-때와-지울-때-할-일">paseo.json: 만들 때와 지울 때 할 일</a><a href="#보관해도-기록과-브랜치는-남는다">보관해도 기록과 브랜치는 남는다</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 02 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="워크스페이스">워크스페이스<span>.</span></h1></div><script>document.documentElement.classList.add('diagrams-pending');</script><div class="note-body" data-pagefind-body>
 <h2 id="지난-편">지난 편</h2>
 <p><a href="/notes/agent-orchestrator/01-one-daemon-many-clients/">1편</a>에서 daemon 하나가 에이전트, 터미널, 워크스페이스를 모두 맡고 앱과 CLI는 WebSocket으로 붙는 클라이언트라는 것을 봤다.</p>
 <h2 id="한-줄-결론">한 줄 결론</h2>
 <p>워크스페이스는 daemon 하나 위의 작업 디렉터리(<code>cwd</code>) 하나에 id를 붙인 단위이고, 에이전트 세션은 모두 어떤 워크스페이스에 속한다. 디렉터리를 따로 떼어야 하면 Paseo는 git worktree를 만들고, 이름은 임시로 붙였다가 나중에 다시 짓는다. 다 쓴 워크스페이스는 기록을 지우지 않고 보관 표시만 한 뒤 디렉터리만 정리한다.</p>
 <h2 id="쉽게-보기">쉽게 보기</h2>
 <p><code>my-app</code> 프로젝트에서 격리 방식으로 “New worktree”를 고르고, 첫 프롬프트로 “로그인 폼 검증 버그 고쳐 줘”를 넣어 워크스페이스를 만든다고 하자. 만든 뒤 리뷰용 에이전트와 터미널도 하나씩 연다. daemon 안의 모습은 이렇다.</p>
-<pre><code class="language-mermaid">flowchart TB
+<pre class="mermaid-source">flowchart TB
   subgraph project["프로젝트 my-app"]
     direction TB
     subgraph wsA["워크스페이스 A (local_checkout)"]
@@ -24,8 +24,7 @@
       b0 ~~~ b1 ~~~ b2 ~~~ b3
     end
     wsA ~~~ wsB
-  end
-</code></pre>
+  end</pre>
 <p>워크스페이스 B는 이런 순서로 생기고 사라진다.</p>
 <ol>
 <li>daemon이 <code>tidy-fox</code> 같은 임의 이름으로 worktree 디렉터리와 같은 이름의 브랜치를 만든다. 만들기 요청은 여기서 끝난다.</li>
@@ -230,4 +229,4 @@
     dialog.addEventListener('close', () => openButton.focus());
     input.addEventListener('input', search);
   }
-</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.NUr_e7Be.js"></script>
+</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.BHoBpY_F.js"></script>

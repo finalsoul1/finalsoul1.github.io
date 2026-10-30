@@ -1,17 +1,16 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="Paseo는 relay를 믿지 않는 중계자로 두고, 휴대폰과 daemon이 직접 암호화한다. 휴대폰은 QR로 받은 daemon 공개키로 핸드셰이크를 해서 상대가 그 daemon이 맞는지 확인하고, 그 뒤 메시지마다 순서 번호를 넣어 암호화한다(새 방식인 protected 모드 기준). 다만 이 핸드셰이크는 휴대폰이 누구인지는 확인하지 않는다. 그래서 비밀번호를 정하지 않으면 페어링 링크를 가진 사람은 누구나 소유자 권한으로 붙는다."><title>relay를 믿지 않고 통신하는 법 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="relay를 믿지 않고 통신하는 법"><meta property="og:description" content="Paseo는 relay를 믿지 않는 중계자로 두고, 휴대폰과 daemon이 직접 암호화한다. 휴대폰은 QR로 받은 daemon 공개키로 핸드셰이크를 해서 상대가 그 daemon이 맞는지 확인하고, 그 뒤 메시지마다 순서 번호를 넣어 암호화한다(새 방식인 protected 모드 기준). 다만 이 핸드셰이크는 휴대폰이 누구인지는 확인하지 않는다. 그래서 비밀번호를 정하지 않으면 페어링 링크를 가진 사람은 누구나 소유자 권한으로 붙는다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-orchestrator/07-relay-encryption/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
           if (new URLSearchParams(location.search).has('notrack')) sessionStorage.setItem('notrack', '1');
           function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
-        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.B4atWCcl.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 07-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-relay를-믿지-않게-짜나">왜 relay를 믿지 않게 짜나</a><a href="#페어링-링크에-daemon-공개키를-담는다">페어링: 링크에 daemon 공개키를 담는다</a><a href="#핸드셰이크-휴대폰이-daemon을-확인한다">핸드셰이크: 휴대폰이 daemon을 확인한다</a><a href="#메시지마다-순서-번호를-붙인다">메시지마다 순서 번호를 붙인다</a><a href="#relay가-볼-수-있는-것">relay가 볼 수 있는 것</a><a href="#비밀번호가-없으면-링크가-곧-열쇠다">비밀번호가 없으면 링크가 곧 열쇠다</a><a href="#옛-방식을-남긴-대가-다운그레이드-방어">옛 방식을 남긴 대가: 다운그레이드 방어</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 07 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="relay를 믿지 않고 통신하는 법">relay를 믿지 않고 통신하는 법<span>.</span></h1></div><script>document.documentElement.classList.add('diagrams-pending');</script><div class="note-body" data-pagefind-body>
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.DWKgP8z-.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">Paseo로 보는 에이전트 오케스트레이터 / 07-08</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#왜-relay를-믿지-않게-짜나">왜 relay를 믿지 않게 짜나</a><a href="#페어링-링크에-daemon-공개키를-담는다">페어링: 링크에 daemon 공개키를 담는다</a><a href="#핸드셰이크-휴대폰이-daemon을-확인한다">핸드셰이크: 휴대폰이 daemon을 확인한다</a><a href="#메시지마다-순서-번호를-붙인다">메시지마다 순서 번호를 붙인다</a><a href="#relay가-볼-수-있는-것">relay가 볼 수 있는 것</a><a href="#비밀번호가-없으면-링크가-곧-열쇠다">비밀번호가 없으면 링크가 곧 열쇠다</a><a href="#옛-방식을-남긴-대가-다운그레이드-방어">옛 방식을 남긴 대가: 다운그레이드 방어</a><a href="#새-용어">새 용어</a><a href="#deeper">더 깊이</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 07 / 2026.10.29</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="relay를 믿지 않고 통신하는 법">relay를 믿지 않고 통신하는 법<span>.</span></h1></div><script>document.documentElement.classList.add('diagrams-pending');</script><div class="note-body" data-pagefind-body>
 <h2 id="지난-편">지난 편</h2>
 <p><a href="/notes/agent-orchestrator/06-mobile-sync/">6편</a>에서는 휴대폰 연결이 끊겼다 붙어도 화면을 맞추는 방법과, 휴대폰이 relay와 직접 연결 사이에서 경로를 바꾸는 기준을 봤다.</p>
 <h2 id="한-줄-결론">한 줄 결론</h2>
 <p>Paseo는 relay를 믿지 않는 중계자로 두고, 휴대폰과 daemon이 직접 암호화한다. 휴대폰은 QR로 받은 daemon 공개키로 핸드셰이크를 해서 상대가 그 daemon이 맞는지 확인하고, 그 뒤 메시지마다 순서 번호를 넣어 암호화한다(새 방식인 <code>protected</code> 모드 기준). 다만 이 핸드셰이크는 휴대폰이 누구인지는 확인하지 않는다. 그래서 비밀번호를 정하지 않으면 페어링 링크를 가진 사람은 누구나 소유자 권한으로 붙는다.</p>
 <h2 id="쉽게-보기">쉽게 보기</h2>
 <p>집에 있는 맥에서 daemon이 돌고, 밖에 있는 휴대폰으로 그 daemon을 쓴다고 하자. 맥은 공유기 뒤에 있어서 휴대폰이 맥 주소로 바로 붙을 수 없다. 그래서 daemon이 먼저 relay 서버에 밖으로 연결해 두고, 휴대폰도 relay에 붙어서 둘이 relay에서 만난다.</p>
-<pre><code class="language-mermaid">flowchart TB
+<pre class="mermaid-source">flowchart TB
   phone["휴대폰"] -- "WebSocket" --> relay["relay 서버"]
-  daemon["daemon, 내 맥"] -- "WebSocket&#x3C;br/>daemon이 먼저&#x3C;br/>밖으로 연결해 둔다" --> relay
-</code></pre>
+  daemon["daemon, 내 맥"] -- "WebSocket&#x3C;br/>daemon이 먼저&#x3C;br/>밖으로 연결해 둔다" --> relay</pre>
 <p>페어링 링크(QR)에는 다음이 들어 있다.</p>
 <ul>
 <li>relay 주소</li>
@@ -33,7 +32,7 @@
 <p>이 링크는 새지 않게 다뤄야 한다. 비밀번호를 정하지 않은 daemon에는 이 링크만 있으면 누구나 들어올 수 있다(아래 “비밀번호가 없으면 링크가 곧 열쇠다” 절). 보안 문서도 QR과 링크를 “Treat it like a password”라고 적는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/SECURITY.md#L43">SECURITY.md</a>).</p>
 <h2 id="핸드셰이크-휴대폰이-daemon을-확인한다">핸드셰이크: 휴대폰이 daemon을 확인한다</h2>
 <p>Paseo가 쓰는 핸드셰이크는 Noise라는 공개 규격의 NK 패턴이다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/relay/src/noise/index.ts#L1-L14">noise/index.ts</a>). 메시지 두 개로 끝난다.</p>
-<pre><code class="language-mermaid">sequenceDiagram
+<pre class="mermaid-source">sequenceDiagram
   participant P as 휴대폰&#x3C;br/>(고정 키 없음)
   participant D as daemon&#x3C;br/>(고정 키 한 쌍)
   Note over P: 이번 연결용 임시 키를&#x3C;br/>새로 만든다
@@ -43,8 +42,7 @@
   Note over D: 이번 연결용 임시 키를&#x3C;br/>새로 만든다
   D->>P: e2ee_ready: 임시 공개키
   Note over P,D: 양쪽 모두 두 임시 키로&#x3C;br/>같은 비밀값 B를 얻는다
-  Note over P,D: A와 B를 섞어&#x3C;br/>보내기용 키와&#x3C;br/>받기용 키를 얻는다.&#x3C;br/>daemon은 같은 두 키를&#x3C;br/>반대 용도로 쓴다
-</code></pre>
+  Note over P,D: A와 B를 섞어&#x3C;br/>보내기용 키와&#x3C;br/>받기용 키를 얻는다.&#x3C;br/>daemon은 같은 두 키를&#x3C;br/>반대 용도로 쓴다</pre>
 <p>비밀값 A는 daemon 비밀키가 있어야 계산할 수 있다. relay가 daemon인 척 <code>e2ee_ready</code>를 꾸며도 A를 모르므로 휴대폰의 검증에서 실패한다. 휴대폰은 이 과정으로 상대가 QR에 담긴 바로 그 daemon인지 확인한다.</p>
 <p>반대 방향 확인은 없다. 휴대폰은 매번 새로 만든 임시 키만 쓰고 고정 키가 없으므로, daemon은 핸드셰이크만으로는 상대가 누구인지 알 수 없다. daemon 공개키를 아는 사람이면 누구나 이 핸드셰이크를 끝낼 수 있다. 누구를 들일지 정하는 일은 그 다음 단계인 <code>hello</code>의 비밀번호 검사가 맡는다.</p>
 <p>daemon도 연결마다 임시 키를 새로 만든다. 그래서 지난 연결을 녹화해 두었다가 새 연결에 다시 보내도 키가 달라 풀리지 않는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/relay-endpoint-security.md#L48">relay-endpoint-security.md</a>).</p>
@@ -217,4 +215,4 @@
     dialog.addEventListener('close', () => openButton.focus());
     input.addEventListener('input', search);
   }
-</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.NUr_e7Be.js"></script>
+</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.BHoBpY_F.js"></script>
