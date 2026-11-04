@@ -176,7 +176,7 @@
       <div class="footer-bottom">
         <div class="footer-meta">
           <span>&copy; 2026 권병준 &middot; PROFILE</span>
-          <span>REV e94949f &middot; BUILT 2026.11.04 10:42 KST</span>
+          <span>REV 4c21f4a &middot; BUILT 2026.11.04 17:23 KST</span>
           <a href="https://github.com/finalsoul1/finalsoul1.github.io" data-umami-event="profile-source">BUILT FROM JSON &middot; DEPLOYED BY GITHUB ACTIONS &nearr;</a>
         </div>
         <a href="#main">BACK TO TOP &uarr;</a>
@@ -269,7 +269,19 @@
         if (trackParams.has('track')) { localStorage.removeItem('umami.disabled'); sessionStorage.removeItem('notrack'); }
       }
       function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+      // Messenger links arrive with no referrer, so the in-app browser's UA token is the only hint of where a visit came from.
+      function umamiIdentifyInApp() {
+        const ua = navigator.userAgent;
+        const apps = [
+          ['kakaotalk', /KAKAOTALK/], ['naver', /NAVER\(inapp/], ['daum', /DaumApps/], ['band', /\bBAND\//],
+          ['line', /\bLine\//], ['threads', /Barcelona/], ['instagram', /Instagram/], ['facebook', /FBAN|FBAV|FB_IAB/],
+          ['linkedin', /LinkedInApp/], ['google-app', /\bGSA\//], ['wechat', /MicroMessenger/],
+        ];
+        let inapp = apps.find(([, re]) => re.test(ua))?.[0];
+        if (!inapp && (/; wv\)/.test(ua) || (/iPhone|iPad/.test(ua) && !/Safari\//.test(ua)))) inapp = 'webview-other';
+        if (inapp && window.umami) umami.identify({ inapp });
+      }
     </script>
-    <script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" data-performance="true" data-domains="albangk.com"></script>
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" onload="umamiIdentifyInApp()" data-performance="true" data-domains="albangk.com"></script>
   </body>
 </html>
