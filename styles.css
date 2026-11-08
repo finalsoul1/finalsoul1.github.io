@@ -1,11 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap');
 :root { --paper:#f3efe5; --ink:#171714; --orange:#ff6748; --lime:#e7ff62; --page:#dedbd1; --sheet:#fffefa; --sheet-border:#b7b3a8; --rule:#c9c5bc; --rule-light:#e0dcd3; --muted:#68665f; --orange-dark:#c64b30; --line:2px solid var(--ink); --mono:'DM Mono',monospace; --sans:'DM Sans','Noto Sans KR',sans-serif; }
-* { box-sizing:border-box; scrollbar-color:var(--sheet-border) #eeebe3; scrollbar-width:thin; }
-*::-webkit-scrollbar { width:10px; height:10px; }
-*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner { background:#eeebe3; }
-*::-webkit-scrollbar-thumb { border:2px solid #eeebe3; border-radius:999px; background:var(--sheet-border); }
-*::-webkit-scrollbar-thumb:hover { background:var(--orange); }
-html { scroll-behavior:smooth; scrollbar-gutter:stable; }
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
 body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); }
 a { color:inherit; text-decoration:none; }
 button { font:inherit; }
@@ -19,14 +15,17 @@ img { max-width:100%; }
 .brand { display:flex; align-items:center; gap:12px; padding:12px 4vw; font-size:15px; font-weight:900; line-height:1.05; letter-spacing:-.04em; white-space:nowrap; }
 .brand small { display:block; margin-top:4px; font-family:var(--mono); font-size:9px; letter-spacing:.1em; }
 .brand-mark { display:grid; place-items:center; width:42px; height:42px; background:var(--ink); color:var(--paper); font-family:var(--mono); font-size:16px; letter-spacing:-.08em; }
-.footer { background:var(--orange); padding:90px 4vw 0; }
+.footer { margin-top:auto; background:var(--orange); padding:90px 4vw 0; }
 .footer-bottom > a { display:inline-flex; gap:20px; border-bottom:3px solid var(--ink); padding-bottom:5px; font-size:clamp(23px,3vw,45px); font-weight:800; letter-spacing:-.05em; }
 .footer-bottom { display:flex; justify-content:space-between; gap:24px; border-top:var(--line); padding:22px 0; margin-top:95px; font-family:var(--mono); font-size:10px; letter-spacing:.05em; }
 .footer-bottom a:hover { text-decoration:underline; }
 .small-footer { padding-top:0; }
 .small-footer .footer-bottom { margin-top:0; border-top:0; }
 .resume-page { background:var(--page); }
-.resume-shell { max-width:1040px; margin:auto; padding:35px 22px 100px; }
+@media screen {
+  .resume-page { display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; }
+}
+.resume-shell { width:100%; max-width:1040px; margin:0 auto; padding:35px 22px 100px; }
 .resume-document { background:var(--sheet); border:1px solid var(--sheet-border); box-shadow:10px 10px 0 rgba(23,23,20,.16); padding:70px 76px; }
 .resume-intro { border-bottom:3px solid var(--ink); padding-bottom:30px; }
 .resume-intro h1 { font-size:80px; letter-spacing:-.1em; margin:10px 0 0; line-height:1; }
