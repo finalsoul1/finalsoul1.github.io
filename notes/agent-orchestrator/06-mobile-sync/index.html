@@ -35,7 +35,6 @@ daemon -> 앱: #43 ~ #47, hasNewer: false
 
 앱 화면          #41  #42  #43  #44  #45  #46  #47
 </code></pre>
-<p>이 흐름에서 체감 품질을 만드는 점은 세 가지다.</p>
 <ul>
 <li>대화 전체를 다시 받지 않는다. 빠진 다섯 줄만 받는다.</li>
 <li>이미 받은 줄은 버린다. 같은 줄이 두 번 그려지지 않는다.</li>
@@ -100,7 +99,7 @@ daemon -> 앱: #43 ~ #47, hasNewer: false
 <p>터미널에는 따라잡기 규칙이 하나 더 있다. 빌드 로그처럼 출력이 쏟아질 때 휴대폰이 출력 속도를 못 따라가면, daemon은 밀린 출력을 계속 쌓아 보내지 않는다. 마지막 snapshot 이후 보낸 출력이 256KB를 넘고, 동시에 그 클라이언트 소켓에 아직 못 보낸 데이터가 4MB를 넘으면, 출력 대신 지금 터미널 화면 상태를 한 번 보낸다(5편의 restore, 오래된 클라이언트에는 snapshot)(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal-restore.ts#L10-L17">terminal-restore.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/terminal/terminal-session-controller.ts#L889-L919">terminal-session-controller.ts</a>). 잘 받아 가는 클라이언트는 못 보낸 데이터가 거의 0이라 출력량이 아무리 많아도 끊김 없이 받는다.</p>
 <h2 id="눈여겨볼-설계-선택">눈여겨볼 설계 선택</h2>
 <ul>
-<li><strong>대화와 터미널은 따라잡는 방식이 다르다.</strong> 대화는 한 줄도 빠지면 안 되므로 빈 구간을 끝까지 채운다. 터미널은 지금 화면만 맞으면 되므로 밀린 중간 출력을 건너뛰고 현재 화면으로 바꾼다. 같은 “끊김 복구”라도 데이터의 성격에 맞춰 다르게 풀었다.</li>
+<li><strong>대화와 터미널은 따라잡는 방식이 다르다.</strong> 대화는 한 줄도 빠지면 안 되므로 빈 구간을 끝까지 채운다. 터미널은 지금 화면만 맞으면 되므로 밀린 중간 출력을 건너뛰고 현재 화면으로 바꾼다.</li>
 <li><strong>접속 상태로 전달 여부를 정하지 않는다.</strong> 앱은 어떤 에이전트를 보고 있는지, 앱이 화면에 보이는지를 daemon에 알리지만, daemon은 이 정보를 알림 보낼 곳을 정하는 데만 쓴다. 오래된 접속 정보 때문에 기록이 실시간 메시지에서 빠지면 안 된다고 설계 문서가 분명히 적는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/timeline-sync.md#L24-L33">timeline-sync.md</a>).</li>
 <li><strong>실패한 따라잡기는 간격을 늘려 다시 시도한다.</strong> 1초에서 시작해 두 배씩 늘려 30초까지 기다린다. 처음에는 1초 고정이었다. 그러자 daemon이 계속 거절하는 상황에서 가만히 둔 앱이 매초 요청과 로그를 만들었다고 한다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/timeline/viewed-timeline-sync.ts#L417-L435">viewed-timeline-sync.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/timeline-sync.md#L64-L68">timeline-sync.md</a>).</li>
 </ul>

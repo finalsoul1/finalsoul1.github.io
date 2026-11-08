@@ -71,7 +71,6 @@
 
 <table><thead><tr><th>temperature</th><th><code>네</code></th><th><code>아니</code></th></tr></thead><tbody><tr><td>0</td><td>1.00</td><td>0.00</td></tr><tr><td>0.5</td><td>0.85</td><td>0.15</td></tr><tr><td>1.0</td><td>0.70</td><td>0.30</td></tr><tr><td>2.0</td><td>0.60</td><td>0.40</td></tr></tbody></table>
 <p>나머지 토큰을 빼고 두 후보의 로짓만으로 계산한 가상 값이다. 1.0일 때가 로짓을 그대로 확률로 바꾼 값이다.</p>
-<p>API를 쓸 때 알아 둘 점은 두 가지다.</p>
 <ul>
 <li>같은 요청을 두 번 보내도 답이 다를 수 있다. 모델 출력 문자열을 그대로 비교하는 테스트는 깨지기 쉽다. temperature를 0으로 둬도 똑같은 답이 보장되지는 않는다(더 깊이 참고).</li>
 <li><a href="https://platform.claude.com/docs/en/api/messages">Claude API 문서</a>에서 <code>temperature</code>는 0.0~1.0이고 기본값은 1.0이다. 다만 같은 문서에 따르면 Claude Opus 4.6보다 나중에 나온 모델은 <code>temperature</code>에 1.0이 아닌 값을 보내면 400 에러를 낸다. 이 필드는 문서에 Deprecated로 표시돼 있다. 값을 바꾸기 전에 지금 쓰는 모델이 Opus 4.6 이후에 나왔는지 확인한다.</li>
