@@ -1,0 +1,226 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="1~3편의 환경과 습관을 갖췄다면 에이전트에게 맡기는 단위를 키울 수 있다. 할 일 하나 대신 끝나야 할 상태를 맡기고, 그 분야 전문가가 쓰는 도구와 원자료로 일하게 한다. 다만 결과를 판정할 수단은 먼저 만들어 두고, 그 수단이 실제로 문제를 잡아내는지부터 확인한다."><title>믿을 수 있게 되면 더 크게 맡긴다 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="믿을 수 있게 되면 더 크게 맡긴다"><meta property="og:description" content="1~3편의 환경과 습관을 갖췄다면 에이전트에게 맡기는 단위를 키울 수 있다. 할 일 하나 대신 끝나야 할 상태를 맡기고, 그 분야 전문가가 쓰는 도구와 원자료로 일하게 한다. 다만 결과를 판정할 수단은 먼저 만들어 두고, 그 수단이 실제로 문제를 잡아내는지부터 확인한다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/agent-pyramid/04-delegate-bigger/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
+          {
+            const trackParams = new URLSearchParams(location.search);
+            if (trackParams.get('notrack') === 'always') localStorage.setItem('umami.disabled', '1');
+            else if (trackParams.has('notrack')) sessionStorage.setItem('notrack', '1');
+            if (trackParams.has('track')) { localStorage.removeItem('umami.disabled'); sessionStorage.removeItem('notrack'); }
+          }
+          function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+          // Messenger links arrive with no referrer, so the in-app browser's UA token is the only hint of where a visit came from.
+          function umamiIdentifyInApp() {
+            const ua = navigator.userAgent;
+            const apps = [
+              ['kakaotalk', /KAKAOTALK/], ['naver', /NAVER\(inapp/], ['daum', /DaumApps/], ['band', /\bBAND\//],
+              ['line', /\bLine\//], ['threads', /Barcelona/], ['instagram', /Instagram/], ['facebook', /FBAN|FBAV|FB_IAB/],
+              ['linkedin', /LinkedInApp/], ['google-app', /\bGSA\//], ['wechat', /MicroMessenger/],
+            ];
+            let inapp = apps.find(([, re]) => re.test(ua))?.[0];
+            if (!inapp && (/; wv\)/.test(ua) || (/iPhone|iPad/.test(ua) && !/Safari\//.test(ua)))) inapp = 'webview-other';
+            if (inapp && window.umami) umami.identify({ inapp });
+          }
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" onload="umamiIdentifyInApp()" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.7aLMLuHy.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">에이전트를 믿게 만드는 환경 / 04-04</span><div><a href="#지난-편">지난 편</a><a href="#한-줄-결론">한 줄 결론</a><a href="#들어가며">들어가며</a><a href="#네-가지-야심">네 가지 야심</a><a href="#고도-할-일-대신-결과를-맡긴다">고도: 할 일 대신 결과를 맡긴다</a><a href="#깊이-그-분야-전문가처럼-일하게-한다">깊이: 그 분야 전문가처럼 일하게 한다</a><a href="#범위-여러-분야의-방법을-함께-쓴다">범위: 여러 분야의 방법을 함께 쓴다</a><a href="#사례-1-버그-수정을-결과-단위로-맡겼다">사례 1: 버그 수정을 결과 단위로 맡겼다</a><a href="#사례-2-줄일-수-있는-양부터-쟀다">사례 2: 줄일 수 있는 양부터 쟀다</a><a href="#3편과-부딪히는-지점">3편과 부딪히는 지점</a><a href="#역피라미드에-맞춰-보면">역피라미드에 맞춰 보면</a><a href="#정리-더-크게-맡기기-전에-묻는-것">정리: 더 크게 맡기기 전에 묻는 것</a><a href="#출처">출처</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 04 / 2026.11.06</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="믿을 수 있게 되면 더 크게 맡긴다">믿을 수 있게 되면 더 크게 맡긴다<span>.</span></h1></div><div class="note-body" data-pagefind-body>
+<h2 id="지난-편">지난 편</h2>
+<p>3편에서는 에이전트의 결과물이 매끄러울수록 확인하는 습관을 일하는 순서에 일부러 넣어야 한다고 했다. 요청하기 전에 예상을 적고, 요약보다 실제 출력을 먼저 보고, 에이전트가 혼자 내린 결정을 목록으로 받는다.</p>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>1~3편의 환경과 습관을 갖췄다면 에이전트에게 맡기는 단위를 키울 수 있다. 할 일 하나 대신 끝나야 할 상태를 맡기고, 그 분야 전문가가 쓰는 도구와 원자료로 일하게 한다. 다만 결과를 판정할 수단은 먼저 만들어 두고, 그 수단이 실제로 문제를 잡아내는지부터 확인한다.</p>
+<h2 id="들어가며">들어가며</h2>
+<p>1~3편은 모두 막고 확인하는 쪽의 이야기였다. 에이전트의 실수를 어느 층에서 막을지, 사람에게 어떤 지식이 남아야 하는지, 그 지식을 꺼내 쓰는 습관은 무엇인지를 다뤘다. 그렇다면 에이전트를 믿을 수 있게 된 다음에는 무엇이 달라져야 할까.</p>
+<p>Anthropic에서 Claude.ai와 Claude Code 데스크톱 앱 등의 엔지니어링을 맡고 있는 Felix Rieseberg가 블로그 글 “How to Be More Ambitious”에서 이 질문을 다룬다. 그는 모델의 능력이 고르게 늘지 않는다고 본다. Terence Tao의 말을 빌리면 어떤 방향으로는 놀랍고 어떤 방향으로는 아직 모자라다. 그래서 잘 쓰는 사람이 있는 반면, 간단한 질문이나 이메일 다듬기 말고는 쓸 곳을 찾지 못하는 사람도 많다. “더 야심 차게 써 보라”는 조언은 흔하지만 따라 하기 어려우니, 그는 야심을 네 가지로 나눠 방법을 설명한다.</p>
+<h2 id="네-가지-야심">네 가지 야심</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>종류</th><th>무엇을 키우나</th></tr></thead><tbody><tr><td>속도(Speed)</td><td>같은 일을 더 짧은 시간에 한다</td></tr><tr><td>고도(Altitude)</td><td>할 일 하나 대신 결과를 맡긴다</td></tr><tr><td>깊이(Depth)</td><td>그 분야 최고 전문가가 하듯이 일하게 한다</td></tr><tr><td>범위(Range)</td><td>여러 분야의 방법을 함께 쓴다</td></tr></tbody></table>
+<p>속도는 AI가 만드는 경제적 가치의 대부분이고 이미 잘 알려져 있어서 Rieseberg도 다루지 않는다. 나머지 셋은 모두 에이전트가 소프트웨어를 설치하고 필요한 데이터에 접근할 수 있는 컴퓨터가 있다는 전제에서 출발한다.</p>
+<h2 id="고도-할-일-대신-결과를-맡긴다">고도: 할 일 대신 결과를 맡긴다</h2>
+<p>Rieseberg의 첫 예시는 크래시다. 처음에는 크래시가 날 때마다 하나씩 고쳐 달라고 했고, 나중에는 앱에 크래시가 없게 유지해 달라고 했다. 바뀐 것은 요청 문장만이 아니었다. 결과를 맡기려면 Claude가 혼자 일할 수 있는 환경부터 갖춰야 했다. 크래시 리포트를 쉽게 가져올 수 있게 하고, 앱 버전을 git 커밋에 연결하고, Windows, macOS, Linux 장비를 내줘서 크래시를 직접 재현하고 수정을 확인하게 했다.</p>
+<p>이 준비는 1편의 역피라미드와 같은 일이다. 크래시 리포트 조회와 재현 환경은 2층 자동 검사이고, 장비 접근 권한은 3층 하네스다. 고도를 높이는 일은 프롬프트를 크게 쓰는 일보다, 에이전트가 사람 없이 결과를 확인할 수 있는 층을 먼저 쌓는 일에 가깝다.</p>
+<p>Rieseberg는 고도가 결과를 내야 하는 일에 잘 맞고 창작에는 덜 맞는다고 덧붙인다. 회의가 필요한 일이라면 고도를 높여 볼 만하다고도 했다.</p>
+<h2 id="깊이-그-분야-전문가처럼-일하게-한다">깊이: 그 분야 전문가처럼 일하게 한다</h2>
+<p>깊이는 그 분야 최고 전문가가 쓰는 도구와 방법으로 일하고, 전문가도 결과에서 배울 것이 있을 만큼 밀어붙이는 것이다. Rieseberg가 든 방법 중 개발에 바로 쓸 만한 것은 넷이다.</p>
+<ul>
+<li>업계 수준의 도구를 쓰게 한다. 마크다운 표 대신 데이터베이스와 통계 모델을 요청한다. 내가 그 도구를 몰라도 모델은 대개 안다.</li>
+<li>무리한 목표를 해낼 수 있는 목표처럼 제시한다. 로딩 5초 대신 200ms를 요구하고, 풀 수 있는 문제라고 말한다.</li>
+<li>가정을 원자료로 확인한다. 이탈 원인이 정말 가입 직후 과정에 있는지 로그부터 다시 본다.</li>
+<li>바깥 판정자를 둔다. 모델이 자기 결과를 채점하게 두지 않는다. 가장 좋은 판정자는 모델이 직접 돌려서 바로 결과를 받는 도구다.</li>
+</ul>
+<p>그는 이 방법들을 프롬프트 하나로 묶어 두었다. 요청을 보내기 전에 모델에게 다음 네 가지를 묻고, 그 답에 맞춰 프롬프트를 다시 쓰게 한다.</p>
+<ol>
+<li>이 분야 최고 전문가라면 요청받은 것 말고 무엇을 더 할까.</li>
+<li>그 사람은 어떤 원자료에서 시작할까.</li>
+<li>그 사람이 쓰는 구체적인 방법과 도구는 무엇인가.</li>
+<li>모델과 나 말고 무엇이 결과를 검증할까.</li>
+</ol>
+<p>네 번째 질문은 3편과 이어진다. 3편에서 Osmani는 검사가 통과하면 그 검사가 무엇을 증명했는지 물으라고 했다. Rieseberg는 그보다 한 단계 앞에서, 판정자를 모델 바깥에 두라고 한다.</p>
+<h2 id="범위-여러-분야의-방법을-함께-쓴다">범위: 여러 분야의 방법을 함께 쓴다</h2>
+<p>범위는 예전에는 한 사람이 다 쓰기 어려웠던 여러 분야의 방법을 함께 쓰는 것이다. Rieseberg는 두 가지를 권한다.</p>
+<ul>
+<li>명사를 동사로 바꾼다. “분기 리뷰”라는 명사를 “바쁜 사람들이 30분 안에 원인과 결과에 관한 설명을 믿고, 불확실한 상황에서 결정하게 하는 일”로 풀어 쓰면 어떤 분야가 필요한지 보인다. Tom Kelley와 Jonathan Littman의 책 <em>The Art of Innovation</em>에서 가져온 방법이다.</li>
+<li>역할극을 시키지 않는다. 공매도 투자자처럼 써 달라고 하지 말고, 공매도 투자자가 포지션을 조사할 때 하는 일을 시킨다.</li>
+</ul>
+<p>개발에서도 그대로 쓸 수 있다. “스크롤 버그 수정”을 “사용자가 글을 쓴 직후에도 피드를 빈칸 없이 스크롤하게 하는 일”로 풀면, 렌더링 수정뿐 아니라 측정과 회귀 확인까지 필요하다는 것이 보인다.</p>
+<h2 id="사례-1-버그-수정을-결과-단위로-맡겼다">사례 1: 버그 수정을 결과 단위로 맡겼다</h2>
+<p>앱 웹뷰 안의 커뮤니티 피드에서 글을 연달아 두 개 쓰고 스크롤하면 글 사이에 빈칸이 생기는 버그가 있었다. 피드는 react-virtuoso로 만든 가상 리스트이고, 줄 컴포넌트를 index로 재사용하는 구조가 원인이었다. 새 글이 맨 앞에 들어오면 두 번째 자리의 컴포넌트는 그대로 남고 내용만 다른 글로 바뀐다. 그런데 그 컴포넌트가 예약해 둔 높이에는 이전 글의 높이가 남아 있어서, 짧은 글이 긴 글의 자리를 물려받으면 그 차이만큼 아래가 비었다.</p>
+<p>이 증상 자체는 동료가 넣은 수정으로 이미 막혀 있었다. 다만 그 수정은 index 재사용 문제 가운데 한 곳만 막았고, 같은 영역에서 비슷한 버그가 전에도 두 번 있었다. 그래서 구조를 정리하는 일을 에이전트에게 맡기면서 이렇게 요청했다. “모든 과정을 끝까지 하고 결과를 보고해 줘”, “수정해도 앞에서 찾은 이슈들이 다시 생기면 안 돼”. 무엇을 고칠지 대신 어떤 상태로 끝나야 하는지를 맡긴 것이다.</p>
+<p>에이전트는 이렇게 일했다.</p>
+<ol>
+<li>실기기(Galaxy S23)에 로컬 프로덕션 빌드를 띄우고 측정할 지표를 정했다. 웹 프레임 누락 비율, 긴 애니메이션 프레임(LoAF) 횟수, <code>ResizeObserver</code> 콜백 수, Virtuoso의 스크롤 보정 횟수, 40px을 넘는 빈칸 개수다.</li>
+<li>측정 방법이 버그를 실제로 잡아내는지부터 확인했다. 수정 전 코드로 되돌려 같은 시나리오를 돌리자 103px짜리 빈칸이 나왔고, 현재 코드에서는 빈칸이 없었다.</li>
+<li>기준선, 1단계(줄 컴포넌트를 index 대신 글 id로 key), 2단계(따로 얹어 둔 높이 측정 코드 제거)를 같은 시나리오로 쟀다. 일반 스크롤은 5회, 글 두 개를 쓴 뒤의 스크롤은 3회씩 돌려 중앙값을 비교했다.</li>
+<li>같은 영역에서 예전에 났던 문제 네 가지를 회귀 항목으로 두고 수정 브랜치와 develop을 비교했다. 이미지가 많은 피드의 떨림, 번역한 피드의 떨림, “더보기”로 펼친 상태 유지, 리액션을 등록하고 취소한 뒤의 높이다.</li>
+</ol>
+<p>결과는 기대와 달랐다. 프레임 지표는 거의 그대로였고(일반 스크롤의 프레임 누락 7.22%에서 7.37%), <code>ResizeObserver</code> 콜백만 17% 줄었다. 에이전트는 이것을 성능 개선으로 보고하지 않았다. 체감할 만한 성능 이득은 없고, 얻은 것은 구조 정리와 재발 방지라고 적었다. 코드는 약 370줄 줄었고, 이제 줄 안의 어떤 state도 다른 글로 넘어가지 않는다. 회귀 항목 네 가지도 모두 통과했다.</p>
+<p>이 사례에서 가장 중요한 단계는 2번이다. 측정 결과가 0일 때, 그 0이 버그가 없다는 뜻인지 측정이 버그를 보지 못한다는 뜻인지는 측정만으로 알 수 없다. 2편과 3편의 “회귀 없음” 보고는 이 확인이 빠진 경우였다. 이번에는 수정 전 코드에서 103px이 나오는 것을 먼저 봤기 때문에 수정 후의 0을 믿을 수 있었다. Rieseberg의 바깥 판정자에 한 가지를 더한다면, 판정자도 먼저 시험해 봐야 한다는 것이다.</p>
+<p>환경 쪽에서도 배운 것이 있다. 측정 도중 adb 연결이 여러 번 끊겨 작업이 멈췄다. 원인은 USB 허브였고, 맥 본체 포트에 바로 꽂은 뒤로는 73분 동안 한 번도 끊기지 않았다. 결과 단위로 맡겨도 연결이 끊길 때마다 사람이 케이블을 다시 꽂아야 한다면, 일은 다시 할 일 단위로 쪼개진다.</p>
+<h2 id="사례-2-줄일-수-있는-양부터-쟀다">사례 2: 줄일 수 있는 양부터 쟀다</h2>
+<p>앱 안의 한 홈 화면이 뜨는 데 3초 남짓 걸렸다. 빠르게 해 달라고 맡기기 전에, 시뮬레이터에서 구간별 시간부터 재게 했다. 진입부터 화면 완성까지 약 3.1초가 걸렸고, 그중 2.2초는 목록 API의 서버 응답이었다. 화면 쪽에서 줄일 수 있는 것은 목록을 요청하기 전에 다른 API를 기다리는 약 0.3초뿐이었다.</p>
+<p>그래서 화면 쪽 목표는 그 0.3초로 정하고, 나머지 2.2초는 서버 과제로 넘겼다. Rieseberg는 무리한 목표를 세우라고 했지만, 그 목표를 누가 풀 수 있는지는 재 봐야 안다. 두 API를 차례로 기다리던 것을 동시에 보내게 바꾸자, iOS 시뮬레이터에서 목록 요청 전 대기가 615ms에서 303ms로 줄었다. 검증이 끝나기 전에 화면을 그리면 0.1초를 더 줄일 수 있었지만, 아직 확인하지 않은 데이터를 보여 주게 되어 넣지 않았다.</p>
+<p>다른 기기에서도 다시 쟀다. 목록 응답이 빠른 계정으로 Android 실기기에서 재 보니 화면 완성 시간은 536ms에서 509ms로 거의 그대로였다. 줄일 대기가 처음부터 작았기 때문이다. iOS 시뮬레이터 한 곳에서만 쟀다면 효과를 실제보다 크게 적었을 것이다.</p>
+<h2 id="3편과-부딪히는-지점">3편과 부딪히는 지점</h2>
+<p>3편에서 Osmani는 리뷰할 수 있는 양보다 많이 만들면 리뷰하는 것이 아니라 괜찮기를 바라는 것이라고 했다(오케스트레이션 세금). 더 크게 맡기라는 이 글과 반대 방향처럼 보인다.</p>
+<p>두 사례에서는 둘이 부딪히지 않았다. 고도를 높인 요청이 만들어 내는 양을 늘리지는 않았기 때문이다. 사례 1에서 결과를 받아들일지는 측정표와 회귀 항목 네 개로 판단했고, 그 표를 믿을 수 있었던 것은 측정이 버그를 잡는지 먼저 확인했기 때문이다. 결과를 맡길수록 사람이 검토할 대상은 코드에서 판정 수단으로 옮겨 간다. 판정 수단을 만들 수 없는 일은 아직 할 일 단위로 맡기는 편이 낫다.</p>
+<h2 id="역피라미드에-맞춰-보면">역피라미드에 맞춰 보면</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>맡기는 방식</th><th>연결되는 층</th><th>환경에 남기는 방법</th></tr></thead><tbody><tr><td>결과를 맡긴다</td><td>2층 자동 검사</td><td>수정 전 코드에서 실패하는 것을 확인한 측정 스크립트를 남겨, 다음 작업에서도 같은 기준선을 쓴다</td></tr><tr><td>에이전트가 혼자 재현하고 확인한다</td><td>3층 하네스</td><td>실기기 연결, 시뮬레이터, 로그 조회를 에이전트가 직접 쓸 수 있게 열어 둔다</td></tr><tr><td>전문가처럼 일하게 한다</td><td>4층 글</td><td>Rieseberg의 네 가지 질문을 스킬로 만들어, 큰 작업을 맡기기 전에 프롬프트를 다시 쓰게 한다</td></tr></tbody></table>
+<p>나는 작업 공간마다 로그인된 iOS 시뮬레이터를 따로 띄우고, 에이전트가 내 마우스 커서를 건드리지 않고 시뮬레이터를 탭할 수 있게 해 두었다. 여러 작업이 시뮬레이터 하나를 같이 쓰면 다른 작업이 앱을 다시 띄울 때마다 하던 확인이 끊기기 때문이다.</p>
+<p>환경으로 옮길 수 없는 것도 있다. 무엇을 끝난 상태로 볼지, 무엇을 회귀 항목으로 넣을지, 측정이 0을 냈을 때 그 0을 믿을지는 사람이 정한다. 사례 1의 회귀 항목 네 개도 에이전트가 git 이력에서 찾아 왔지만, 그것을 통과 조건으로 정한 것은 나였다. 2편에서 말한 기초 지식과 넓은 시야가 여기서 쓰인다.</p>
+<h2 id="정리-더-크게-맡기기-전에-묻는-것">정리: 더 크게 맡기기 전에 묻는 것</h2>
+<ol>
+<li>할 일 대신 끝나야 할 상태로 요청을 쓸 수 있는가.</li>
+<li>에이전트가 사람 없이 재현하고 확인할 수 있는 환경이 있는가.</li>
+<li>결과를 판정할 수단이 모델 바깥에 있는가.</li>
+<li>그 판정 수단이 수정 전 상태에서 실제로 실패하는가.</li>
+<li>줄일 수 있는 양을 먼저 쟀는가. 그 양은 누가 줄일 수 있는가.</li>
+<li>다른 기기나 다른 데이터로 다시 재도 같은 결과가 나오는가.</li>
+</ol>
+<p>Rieseberg는 글 후반에서, 사람은 늘 자기가 가능하다고 믿는 범위 안에서만 시도해 왔다고 말한다. 1939년 버클리의 통계학 수업에 늦게 들어온 George Dantzig는 칠판에 적힌 두 문제를 숙제로 알고 풀어 냈는데, 둘 다 통계학에서 아직 풀리지 않은 문제였다. 모델이 몇 주마다 좋아지는 지금은 이 한계가 더 크게 작용한다는 것이 그의 결론이다.</p>
+<h2 id="출처">출처</h2>
+<ul>
+<li><a href="https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/">How to Be More Ambitious: A Tutorial for Humans with Models</a>, Felix Rieseberg, 2026-10-13</li>
+</ul></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/agent-pyramid/03-keep-the-judgment/" rel="prev"><span>&larr; 이전 편</span><strong>에이전트에게 일을 맡겨도 판단은 넘기지 않는다</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const pagefindUrl = '/notes/pagefind/pagefind.js';
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: '/notes/' });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.BHoBpY_F.js"></script>
