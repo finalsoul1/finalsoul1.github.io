@@ -120,14 +120,16 @@
 <p>에이전트가 파일을 고친 도구 호출을 채팅에서 펼치면 나오는 diff는 daemon이 아니라 앱이 하이라이팅한다. diff 줄을 이용해 바뀌기 전 문서와 바뀐 뒤 문서를 다시 만들고, 각각을 통째로 하이라이팅해 줄마다 토큰을 붙인다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/src/utils/diff-highlight.ts#L32-L39">diff-highlight.ts</a>). 추측이지만, git diff와 달리 파일을 읽지 않고 에이전트 스트림에 실린 내용만으로 하므로 앱에서 해도 부담이 작다고 판단한 듯하다.</p>
 </details>
 <h2 id="다음-편">다음 편</h2>
-<p><a href="/notes/agent-orchestrator/06-mobile-sync/">6편</a>에서는 휴대폰 연결이 끊겼다가 이어져도 기록이 빠지지 않는 이유를 본다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/agent-orchestrator/04-providers/" rel="prev"><span>&larr; 이전 편</span><strong>서로 다른 에이전트를 하나처럼 다루기</strong></a><a class="note-pager-next" href="/notes/agent-orchestrator/06-mobile-sync/" rel="next"><span>다음 편 &rarr;</span><strong>연결이 끊겼다가 이어져도 기록이 빠지지 않는 이유</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+<p><a href="/notes/agent-orchestrator/06-mobile-sync/">6편</a>에서는 휴대폰 연결이 끊겼다가 이어져도 기록이 빠지지 않는 이유를 본다.</p></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a href="/notes/agent-orchestrator/04-providers/" rel="prev"><span>&larr; 이전 편</span><strong>서로 다른 에이전트를 하나처럼 다루기</strong></a><a class="note-pager-next" href="/notes/agent-orchestrator/06-mobile-sync/" rel="next"><span>다음 편 &rarr;</span><strong>연결이 끊겼다가 이어져도 기록이 빠지지 않는 이유</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -137,7 +139,7 @@
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;

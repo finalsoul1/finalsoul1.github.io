@@ -67,14 +67,16 @@ data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta"
 <p><a href="https://platform.claude.com/docs/en/build-with-claude/streaming">Claude 스트리밍 문서</a>의 예시에는 <code>"ello frien"</code>처럼 두 단어에 걸친 조각이 이벤트 하나에 담겨 있다. 이벤트 하나에 토큰 여러 개가 들어 있을 수 있다는 뜻이다. 화면에 몇 글자씩 한꺼번에 나타나는 것은 이 때문이고, 생성 순서는 그래도 앞에서 뒤로 한 토큰씩이다.</p>
 </details>
 <h2 id="출처">출처</h2>
-<p>원글 <a href="https://jonghyuk.kim/knowledges/from-user-input-to-llm-output/">LLM에게 질문하면 일어나는 일들</a>을 읽고 다시 정리했다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a class="note-pager-next" href="/notes/llm-inference/02-text-to-numbers/" rel="next"><span>다음 편 &rarr;</span><strong>글자가 숫자가 되기까지</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+<p>원글 <a href="https://jonghyuk.kim/knowledges/from-user-input-to-llm-output/">LLM에게 질문하면 일어나는 일들</a>을 읽고 다시 정리했다.</p></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a class="note-pager-next" href="/notes/llm-inference/02-text-to-numbers/" rel="next"><span>다음 편 &rarr;</span><strong>글자가 숫자가 되기까지</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -84,7 +86,7 @@ data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta"
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;

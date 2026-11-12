@@ -124,14 +124,16 @@
 <p><code>docs/providers.md</code>는 새 provider를 플러그인 SDK로 추가하라고 안내하고, 이때 CLI 연결 방식과 세션 상태는 플러그인이 맡고 실행 파일 위치와 환경 변수는 daemon이 정한다고 적는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/providers.md#L3-L18">providers.md</a>). daemon은 플러그인 provider도 <code>AgentClient</code>와 <code>AgentSession</code>을 구현한 객체(<code>PluginAgentClient</code>, <code>PluginAgentSession</code>)로 감싸서 내장 provider처럼 다룬다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/plugin-provider.ts#L939">plugin-provider.ts</a>, <a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/server/src/server/agent/plugin-provider.ts#L1131">같은 파일</a>). 플러그인을 daemon과 앱에서 실행하는 방식은 8편에서 다룬다.</p>
 </details>
 <h2 id="다음-편">다음 편</h2>
-<p><a href="/notes/agent-orchestrator/05-rendering/">5편</a>에서는 이렇게 모은 진행 기록과 터미널, 파일, diff를 여러 기기 화면에 어떻게 그리는지 본다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/agent-orchestrator/03-shared-between-sessions/" rel="prev"><span>&larr; 이전 편</span><strong>한 워크스페이스의 세션들이 나눠 갖는 것</strong></a><a class="note-pager-next" href="/notes/agent-orchestrator/05-rendering/" rel="next"><span>다음 편 &rarr;</span><strong>터미널, 파일, diff를 여러 기기에 그리기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+<p><a href="/notes/agent-orchestrator/05-rendering/">5편</a>에서는 이렇게 모은 진행 기록과 터미널, 파일, diff를 여러 기기 화면에 어떻게 그리는지 본다.</p></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a href="/notes/agent-orchestrator/03-shared-between-sessions/" rel="prev"><span>&larr; 이전 편</span><strong>한 워크스페이스의 세션들이 나눠 갖는 것</strong></a><a class="note-pager-next" href="/notes/agent-orchestrator/05-rendering/" rel="next"><span>다음 편 &rarr;</span><strong>터미널, 파일, diff를 여러 기기에 그리기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -141,7 +143,7 @@
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;

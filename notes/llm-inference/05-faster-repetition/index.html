@@ -111,14 +111,16 @@ const out = attention(q, kCache, vCache);
 <p>decode는 토큰 하나를 계산하려고 단계마다 모델 가중치 전체와 그 요청의 KV 캐시를 메모리에서 읽는다. 읽은 양에 비해 계산이 적어서 계산 장치가 쉬는 시간이 생기고, 걸리는 시간은 메모리에서 데이터를 읽어 오는 속도(메모리 대역폭)에 달려 있다. PagedAttention 논문 2.2절은 prefill을 prompt phase라고 부른다. 이 논문에 따르면 prompt phase는 행렬끼리 곱하는 계산이라 GPU의 병렬성을 잘 쓰지만, 생성 단계(이 글의 decode)는 GPU 연산 능력을 대부분 쓰지 못하고 memory-bound가 된다. 위 GQA 논문 서론도 decode가 느린 원인으로 같은 메모리 대역폭 부담을 꼽는다.</p>
 <p>그래서 vLLM 같은 일반적인 서빙 엔진은 여러 요청을 묶어 한 번에 계산한다. 가중치를 한 번 읽어 여러 요청에 쓰면 읽는 비용이 요청 수만큼 나뉘기 때문이다(PagedAttention 논문 2.3절). <a href="/notes/llm-inference/04-picking-next-token/">4편 더 깊이</a>에서 본 배치 크기가 이 묶음의 크기다.</p>
 <p>이 차이는 API에서 재는 지연 시간으로도 보인다. <a href="https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-latency">Claude 문서</a>는 요청을 보낸 때부터 응답의 첫 토큰이 나올 때까지의 시간을 TTFT(time to first token)라고 부른다. TTFT에는 네트워크와 서버 대기 시간도 들어가지만, 서버 계산 가운데 첫 토큰 전에 끝나야 하는 것은 prefill이다. 그 뒤 토큰이 나오는 속도는 decode가 정한다. 같은 문서는 지연을 줄이는 방법으로 입력과 출력 토큰을 적게 쓰라고 하고, 체감 지연은 스트리밍으로 줄이라고 권한다. 실제 시간은 모델, 하드웨어, 서버 부하에 따라 달라서 여기서는 수치를 들지 않는다.</p>
-</details></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/llm-inference/04-picking-next-token/" rel="prev"><span>&larr; 이전 편</span><strong>다음 토큰 고르기</strong></a><a class="note-pager-next" href="/notes/llm-inference/06-one-request/" rel="next"><span>다음 편 &rarr;</span><strong>실제 요청 하나를 끝까지 따라가기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+</details></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a href="/notes/llm-inference/04-picking-next-token/" rel="prev"><span>&larr; 이전 편</span><strong>다음 토큰 고르기</strong></a><a class="note-pager-next" href="/notes/llm-inference/06-one-request/" rel="next"><span>다음 편 &rarr;</span><strong>실제 요청 하나를 끝까지 따라가기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -128,7 +130,7 @@ const out = attention(q, kCache, vCache);
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;

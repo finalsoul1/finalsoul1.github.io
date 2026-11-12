@@ -177,14 +177,16 @@ export const Icon = &#x3C;T extends IconName>({ name, variant, className, ...pro
 <p>일부러 <code>"clockk"</code>나 없는 variant를 넣어 컴파일 에러가 나는지 확인했고, 화면은 바뀌기 전과 후를 같은 경로로 캡처해 픽셀을 비교했다. 아이콘 영역은 완전히 같았다.</p>
 <p>1단계를 마친 날, 앞에서 말한 “지울 수 없는 옛 API” 제약이 생겼다. 엔트리를 하나씩 지우는 계획은 접었지만, 캐스팅을 없앤 덕분에 뒤에 나오는 codemod와 lint 규칙은 타입이 정확한 코드 위에서 돌 수 있었다.</p>
 <h2 id="다음-편">다음 편</h2>
-<p><a href="/notes/icon-migration/02-generator-and-codemod/">2편</a>은 아이콘 모듈을 만드는 생성기와 사용처를 바꾸는 codemod 이야기다. 두 도구가 어긋나지 않게 만든 방법과, 생성 결과를 매번 같게 만드느라 고친 것들을 다룬다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a class="note-pager-next" href="/notes/icon-migration/02-generator-and-codemod/" rel="next"><span>다음 편 &rarr;</span><strong>생성기와 codemod로 사용처 880곳 옮기기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+<p><a href="/notes/icon-migration/02-generator-and-codemod/">2편</a>은 아이콘 모듈을 만드는 생성기와 사용처를 바꾸는 codemod 이야기다. 두 도구가 어긋나지 않게 만든 방법과, 생성 결과를 매번 같게 만드느라 고친 것들을 다룬다.</p></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a class="note-pager-next" href="/notes/icon-migration/02-generator-and-codemod/" rel="next"><span>다음 편 &rarr;</span><strong>생성기와 codemod로 사용처 880곳 옮기기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -194,7 +196,7 @@ export const Icon = &#x3C;T extends IconName>({ name, variant, className, ...pro
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;

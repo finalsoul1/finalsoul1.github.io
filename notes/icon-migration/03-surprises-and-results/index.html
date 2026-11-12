@@ -164,14 +164,16 @@
 <h2 id="남은-일">남은 일</h2>
 <p><code>Icon</code>과 <code>iconMap</code> 파일은 아직 남아 있다. DS를 동기화해 쓰는 다른 앱에 <code>&#x3C;Icon></code> 사용처가 432곳 있고, 그 앱을 옮긴 뒤에 지울 수 있다. 이 작업은 별도 이슈로 분리했고 일정은 정해지지 않았다. 생성기는 그때까지 <code>iconMap</code>을 계속 만든다.</p>
 <h2 id="다음-편">다음 편</h2>
-<p>구조를 바꾸고 나니 아이콘을 추가하는 과정이 눈에 들어왔다. 디자이너가 SVG를 내보내고 개발자가 손으로 고쳐 넣는 과정이었다. <a href="/notes/icon-migration/04-figma-sync/">4편</a>은 디자인 파일을 원본으로 삼아 아이콘을 동기화하게 만든 이야기다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/icon-migration/02-generator-and-codemod/" rel="prev"><span>&larr; 이전 편</span><strong>생성기와 codemod로 사용처 880곳 옮기기</strong></a><a class="note-pager-next" href="/notes/icon-migration/04-figma-sync/" rel="next"><span>다음 편 &rarr;</span><strong>디자인 파일을 아이콘의 원본으로 만들기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+<p>구조를 바꾸고 나니 아이콘을 추가하는 과정이 눈에 들어왔다. 디자이너가 SVG를 내보내고 개발자가 손으로 고쳐 넣는 과정이었다. <a href="/notes/icon-migration/04-figma-sync/">4편</a>은 디자인 파일을 원본으로 삼아 아이콘을 동기화하게 만든 이야기다.</p></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a href="/notes/icon-migration/02-generator-and-codemod/" rel="prev"><span>&larr; 이전 편</span><strong>생성기와 codemod로 사용처 880곳 옮기기</strong></a><a class="note-pager-next" href="/notes/icon-migration/04-figma-sync/" rel="next"><span>다음 편 &rarr;</span><strong>디자인 파일을 아이콘의 원본으로 만들기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -181,7 +183,7 @@
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;

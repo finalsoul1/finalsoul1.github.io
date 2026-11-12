@@ -111,14 +111,16 @@ softmax([5.0, 4.15], 0.5); // [0.84..., 0.15...]
 <p>배치 크기는 그 순간 서버에 몰린 요청 수에 따라 정해진다. vLLM 같은 일반적인 서빙 엔진은 여러 사용자의 요청을 묶어 한 번에 계산한다. 다른 요청의 내용이 섞여 드는 것은 아니지만, 사용자 쪽에서 보면 같은 요청의 결과가 그때그때 달라진다.</p>
 <p>Thinking Machines는 배치 크기와 상관없이 덧셈 순서를 고정한 커널(batch-invariant kernel)로 바꿔 1,000번 모두 같은 답을 얻었다. 대신 느려졌다. Qwen3-8B로 1,000개를 생성할 때 vLLM 기본 설정은 26초, 이 커널과 개선한 어텐션 커널을 함께 쓴 버전은 42초가 걸렸다.</p>
 <p>Claude API 문서도 <code>temperature</code>가 0.0이어도 결과가 완전히 결정적이지는 않다고 밝힌다. 다만 원인은 밝히지 않으므로 위 설명이 Claude에 그대로 해당하는지는 알 수 없다.</p>
-</details></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/llm-inference/03-mixing-context/" rel="prev"><span>&larr; 이전 편</span><strong>앞 문맥을 섞는 법</strong></a><a class="note-pager-next" href="/notes/llm-inference/05-faster-repetition/" rel="next"><span>다음 편 &rarr;</span><strong>한 번 한 계산은 다시 하지 않기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+</details></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a href="/notes/llm-inference/03-mixing-context/" rel="prev"><span>&larr; 이전 편</span><strong>앞 문맥을 섞는 법</strong></a><a class="note-pager-next" href="/notes/llm-inference/05-faster-repetition/" rel="next"><span>다음 편 &rarr;</span><strong>한 번 한 계산은 다시 하지 않기</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -128,7 +130,7 @@ softmax([5.0, 4.15], 0.5); // [0.84..., 0.15...]
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;

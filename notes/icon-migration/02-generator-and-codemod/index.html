@@ -103,14 +103,16 @@ size === 'large' ? (
 </ul>
 <p>두 번째와 세 번째는 빌드 에러로, 네 번째는 리뷰에서 바로 드러났다. 위험한 것은 첫 번째처럼 보고 없이 지나가는 경우였다. 도구가 “몇 건 남았다”고 말하면 그 숫자가 맞는지 한 번은 직접 세어 보는 편이 낫다.</p>
 <h2 id="다음-편">다음 편</h2>
-<p><a href="/notes/icon-migration/03-surprises-and-results/">3편</a>은 전환 중에 생긴 예상 밖 번들 비용, 처음 만든 번들 검사가 회귀를 놓친 이유, 최종 결과를 다룬다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/icon-migration/01-why-all-icons-loaded/" rel="prev"><span>&larr; 이전 편</span><strong>아이콘 198개가 모든 화면에 실리던 이유</strong></a><a class="note-pager-next" href="/notes/icon-migration/03-surprises-and-results/" rel="next"><span>다음 편 &rarr;</span><strong>예상 밖 비용, 번들 검사가 놓친 회귀, 전환 결과</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+<p><a href="/notes/icon-migration/03-surprises-and-results/">3편</a>은 전환 중에 생긴 예상 밖 번들 비용, 처음 만든 번들 검사가 회귀를 놓친 이유, 최종 결과를 다룬다.</p></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a href="/notes/icon-migration/01-why-all-icons-loaded/" rel="prev"><span>&larr; 이전 편</span><strong>아이콘 198개가 모든 화면에 실리던 이유</strong></a><a class="note-pager-next" href="/notes/icon-migration/03-surprises-and-results/" rel="next"><span>다음 편 &rarr;</span><strong>예상 밖 비용, 번들 검사가 놓친 회귀, 전환 결과</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -120,7 +122,7 @@ size === 'large' ? (
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;

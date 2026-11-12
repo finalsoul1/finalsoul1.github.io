@@ -158,14 +158,16 @@
 <p>모바일 앱과 웹 앱은 Expo로 만든 한 코드베이스(<code>packages/app</code>)에서 나온다. 웹 빌드 명령은 <code>expo export --platform web</code>이고(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/app/package.json#L31">package.json</a>), 데스크톱 앱은 Electron 안에서 이 결과물(<code>app-dist</code>)을 불러온다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/desktop/src/main.ts#L581">main.ts</a>). 그래서 데스크톱과 휴대폰의 화면 구성이 거의 같다. 한 코드로 여러 기기의 화면을 만드는 방식은 5편에서 다룬다.</p>
 </details>
 <h2 id="다음-편">다음 편</h2>
-<p><a href="/notes/agent-orchestrator/02-workspace/">2편</a>에서는 daemon이 맡는 작업 공간, 워크스페이스가 무엇인지 본다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a class="note-pager-next" href="/notes/agent-orchestrator/02-workspace/" rel="next"><span>다음 편 &rarr;</span><strong>워크스페이스</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+<p><a href="/notes/agent-orchestrator/02-workspace/">2편</a>에서는 daemon이 맡는 작업 공간, 워크스페이스가 무엇인지 본다.</p></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a class="note-pager-next" href="/notes/agent-orchestrator/02-workspace/" rel="next"><span>다음 편 &rarr;</span><strong>워크스페이스</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -175,7 +177,7 @@
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;

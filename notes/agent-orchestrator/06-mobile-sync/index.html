@@ -119,14 +119,16 @@ daemon -> 앱: #43 ~ #47, hasNewer: false
 <p>도구 호출 하나는 시작, 진행, 완료처럼 여러 줄의 기록으로 쌓이지만 화면에는 카드 하나로 보인다. 그래서 조회 응답의 각 항목은 자신이 덮는 범위를 <code>seqStart</code>, <code>seqEnd</code>, <code>sourceSeqRanges</code>로 함께 보낸다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/packages/protocol/src/messages.ts#L4717-L4727">messages.ts</a>). 앱은 이 범위를 보고 실시간으로 이미 그린 답변과 생각 과정 중 겹치는 부분을 조회 결과로 바꿔 끼운다. 조회 결과의 전체 글을 이미 그린 앞부분 뒤에 이어 붙이지 않는다(<a href="https://github.com/getpaseo/paseo/blob/v0.14.0-beta.1/docs/timeline-sync.md#L210-L217">timeline-sync.md</a>).</p>
 </details>
 <h2 id="다음-편">다음 편</h2>
-<p><a href="/notes/agent-orchestrator/07-relay-encryption/">7편</a>에서는 휴대폰이 relay를 거쳐 daemon에 붙을 때 그 내용을 어떻게 지키는지 본다.</p></div><nav class="note-pager" aria-label="이전 편과 다음 편"><a href="/notes/agent-orchestrator/05-rendering/" rel="prev"><span>&larr; 이전 편</span><strong>터미널, 파일, diff를 여러 기기에 그리기</strong></a><a class="note-pager-next" href="/notes/agent-orchestrator/07-relay-encryption/" rel="next"><span>다음 편 &rarr;</span><strong>relay를 믿지 않고 통신하는 법</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+<p><a href="/notes/agent-orchestrator/07-relay-encryption/">7편</a>에서는 휴대폰이 relay를 거쳐 daemon에 붙을 때 그 내용을 어떻게 지키는지 본다.</p></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a href="/notes/agent-orchestrator/05-rendering/" rel="prev"><span>&larr; 이전 편</span><strong>터미널, 파일, diff를 여러 기기에 그리기</strong></a><a class="note-pager-next" href="/notes/agent-orchestrator/07-relay-encryption/" rel="next"><span>다음 편 &rarr;</span><strong>relay를 믿지 않고 통신하는 법</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
   // is:inline keeps Vite away from this import: the index only exists after astro build, and a
   // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
-  const pagefindUrl = '/notes/pagefind/pagefind.js';
   const maxResults = 10;
 
   const openButton = document.querySelector('[data-search-open]');
   const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
 
   if (openButton && dialog) {
     const input = dialog.querySelector('[data-search-input]');
@@ -136,7 +138,7 @@ daemon -> 앱: #43 ~ #47, hasNewer: false
 
     const loadPagefind = () => {
       pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
-        await pagefind.options({ baseUrl: '/notes/' });
+        await pagefind.options({ baseUrl: searchBase });
         return pagefind;
       });
       return pagefindPromise;
