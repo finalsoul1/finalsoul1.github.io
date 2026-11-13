@@ -1,0 +1,170 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f3efe5"><meta name="description" content="핫픽스가 급한데 MR CI가 느렸다. 구간별로 시간을 재 보니 빌드 잡 하나가 실제로 빌드하는 시간은 2분 남짓이었고, 그 앞에서 러너를 받기까지 1.5~4분을 기다렸다. 체감만으로는 &quot;느리다&quot;까지만 말할 수 있고, 어디를 고칠지는 시간을 구간별로 나눠 봐야 정해진다."><title>느린 CI, 잡마다 러너 대기에 1분 넘게 쓰고 있었다 | 권병준 Notes</title><meta property="og:type" content="article"><meta property="og:site_name" content="권병준 Notes"><meta property="og:title" content="느린 CI, 잡마다 러너 대기에 1분 넘게 쓰고 있었다"><meta property="og:description" content="핫픽스가 급한데 MR CI가 느렸다. 구간별로 시간을 재 보니 빌드 잡 하나가 실제로 빌드하는 시간은 2분 남짓이었고, 그 앞에서 러너를 받기까지 1.5~4분을 기다렸다. 체감만으로는 &quot;느리다&quot;까지만 말할 수 있고, 어디를 고칠지는 시간을 구간별로 나눠 봐야 정해진다."><meta property="og:locale" content="ko_KR"><meta property="og:url" content="https://finalsoul1.github.io/notes/slow-ci/01-where-ci-spends-time/"><meta name="twitter:card" content="summary"><link rel="icon" href="/notes/favicon.svg?v=2" type="image/svg+xml"><script>
+          {
+            const trackParams = new URLSearchParams(location.search);
+            if (trackParams.get('notrack') === 'always') localStorage.setItem('umami.disabled', '1');
+            else if (trackParams.has('notrack')) sessionStorage.setItem('notrack', '1');
+            if (trackParams.has('track')) { localStorage.removeItem('umami.disabled'); sessionStorage.removeItem('notrack'); }
+          }
+          function umamiBeforeSend(type, payload) { return sessionStorage.getItem('notrack') ? false : payload; }
+          // Messenger links arrive with no referrer, so the in-app browser's UA token is the only hint of where a visit came from.
+          function umamiIdentifyInApp() {
+            const ua = navigator.userAgent;
+            const apps = [
+              ['kakaotalk', /KAKAOTALK/], ['naver', /NAVER\(inapp/], ['daum', /DaumApps/], ['band', /\bBAND\//],
+              ['line', /\bLine\//], ['threads', /Barcelona/], ['instagram', /Instagram/], ['facebook', /FBAN|FBAV|FB_IAB/],
+              ['linkedin', /LinkedInApp/], ['google-app', /\bGSA\//], ['wechat', /MicroMessenger/],
+            ];
+            let inapp = apps.find(([, re]) => re.test(ua))?.[0];
+            if (!inapp && (/; wv\)/.test(ua) || (/iPhone|iPad/.test(ua) && !/Safari\//.test(ua)))) inapp = 'webview-other';
+            if (inapp && window.umami) umami.identify({ inapp });
+          }
+        </script><script defer src="https://cloud.umami.is/script.js" data-website-id="d5b0d909-ad05-43a6-aea8-11343f3ec261" data-before-send="umamiBeforeSend" onload="umamiIdentifyInApp()" data-performance="true" data-domains="albangk.com"></script><link rel="stylesheet" href="/notes/_astro/NotesLayout.7aLMLuHy.css"></head><body class="resume-page"><a class="skip-link" href="#main">본문으로 건너뛰기</a><header class="site-header"><a class="brand" href="/" aria-label="권병준 이력서로 이동"><span class="brand-mark">FE</span><span>권병준 <small>FRONTEND DEVELOPER</small></span></a><div class="resume-actions"><a href="/" data-umami-event="notes-to-profile">이력서 <span aria-hidden="true">&nearr;</span></a><a class="resume-notes" href="/notes/">Notes</a><button type="button" data-search-open hidden data-umami-event="notes-search-open">검색</button></div></header><main id="main" class="resume-shell"><nav class="resume-toc" aria-label="글 목차"><span class="eyebrow">느린 CI의 병목을 추적하다 / 01-02</span><div><a href="#한-줄-결론">한 줄 결론</a><a href="#쉽게-보기">쉽게 보기</a><a href="#파이프라인은-둘로-나뉜다">파이프라인은 둘로 나뉜다</a><a href="#빌드-잡의-시간을-나눠-보면">빌드 잡의 시간을 나눠 보면</a><a href="#새-용어">새 용어</a><a href="#다음-편">다음 편</a></div></nav><article class="resume-document"><div class="resume-intro"><span class="eyebrow">NOTES / 01 / 2026.11.12</span><h1 class="note-title" data-pagefind-meta="title[data-title]" data-title="느린 CI, 잡마다 러너 대기에 1분 넘게 쓰고 있었다">느린 CI, 잡마다 러너 대기에 1분 넘게 쓰고 있었다<span>.</span></h1></div><script>document.documentElement.classList.add('diagrams-pending');</script><div class="note-body" data-pagefind-body>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p>핫픽스가 급한데 MR CI가 느렸다. 구간별로 시간을 재 보니 빌드 잡 하나가 실제로 빌드하는 시간은 2분 남짓이었고, 그 앞에서 러너를 받기까지 1.5~4분을 기다렸다. 체감만으로는 “느리다”까지만 말할 수 있고, 어디를 고칠지는 시간을 구간별로 나눠 봐야 정해진다.</p>
+<h2 id="쉽게-보기">쉽게 보기</h2>
+<p>MR을 하나 올리면 CI가 통과할 때까지 중앙값 8.5분이 걸렸다. 평소에는 견딜 만했지만, 운영 버그를 막는 핫픽스처럼 급할 때는 이 8.5분이 길다. 파이프라인이 성공해야 머지할 수 있으므로, CI가 느린 만큼 배포도 늦어진다.</p>
+<p>식당에 비유하면 음식이 늦게 나올 때 요리사가 느린지, 주문이 주방에 늦게 전달되는지를 먼저 나눠 봐야 하는 것과 같다. 그래서 최근 2주 동안의 MR 파이프라인을 구간별로 나눠 봤다.</p>
+<h2 id="파이프라인은-둘로-나뉜다">파이프라인은 둘로 나뉜다</h2>
+<p>우리 저장소의 CI는 부모 파이프라인이 자식 파이프라인(실제 빌드)을 실행하는 구조다. 자식 파이프라인이 끝나면 semgrep 보안 스캔이 이어서 돌고, 둘 다 끝나야 부모 파이프라인이 성공한다.</p>
+<pre class="mermaid-source">flowchart TB
+  mr["MR push"] --> parent["부모 파이프라인"]
+  parent --> cb["codebuild 자식 파이프라인&#x3C;br/>(빌드 잡 5~6개)"]
+  cb --> sg["semgrep 보안 스캔"]
+  sg --> done["완료"]</pre>
+<p>전체 8.5분 가운데 자식 파이프라인이 약 70%를 차지했다. 빌드 잡들이 시간을 가장 많이 쓴다는 뜻이므로, 자식 파이프라인 안을 다시 나눠 봤다.</p>
+<h2 id="빌드-잡의-시간을-나눠-보면">빌드 잡의 시간을 나눠 보면</h2>
+<p>이 CI는 AWS CodeBuild를 러너로 쓴다. 잡마다 러너를 새로 띄우는 on-demand 방식이라, 잡이 실행되기 전에 준비 단계가 붙는다.</p>
+<p>잡 하나의 시간은 다음과 같이 나뉜다. 대기 구간은 세 가지다.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>구간</th><th>시간</th><th>하는 일</th></tr></thead><tbody><tr><td>QUEUED</td><td>대부분 0초, 빌드의 34%에서 최대 약 140초</td><td>러너 용량이 부족할 때 순서를 기다린다</td></tr><tr><td>PROVISIONING</td><td>중앙값 30초</td><td>빌드 컨테이너를 띄운다</td></tr><tr><td>DOWNLOAD_SOURCE</td><td>중앙값 54초</td><td>소스를 받는 단계(아래에서 설명)</td></tr><tr><td>BUILD</td><td>중앙값 약 125초(p90 약 189초)</td><td>실제 빌드 잡을 실행한다</td></tr></tbody></table>
+<p>대기 세 구간을 더하면 잡마다 1.5~4분이고, 실제 빌드는 2분 남짓이다. 대기가 항상 빌드보다 긴 것은 아니다. QUEUED가 붙는 시간대에 대기가 길어진다. 그래도 잡마다 최소 1분 넘게 준비 단계에 쓰고 있었다.</p>
+<p>준비 단계 가운데 설명되지 않는 값이 <code>DOWNLOAD_SOURCE</code> 54초였다. 이름대로라면 소스를 내려받는 단계인데, 이 러너는 소스를 받지 않도록 설정돼 있다(<code>NO_SOURCE</code>). 받을 소스가 없는데 54초가 걸린다면 그 안에서 다른 작업이 돌고 있다는 뜻이다.</p>
+<h2 id="새-용어">새 용어</h2>
+<ul>
+<li><strong>러너</strong>: CI 잡을 실제로 실행하는 머신이나 컨테이너.</li>
+<li><strong>on-demand 러너</strong>: 미리 띄워 두지 않고 잡이 들어올 때마다 새로 띄우는 러너. 매번 준비 시간이 든다.</li>
+<li><strong>CodeBuild <code>phases</code></strong>: CodeBuild가 빌드 하나를 QUEUED, PROVISIONING, DOWNLOAD_SOURCE, BUILD 같은 단계로 나눠 각 단계의 시작·종료 시각과 <code>durationInSeconds</code>를 기록한 값.</li>
+<li><strong><code>NO_SOURCE</code></strong>: CodeBuild 프로젝트가 소스 저장소를 내려받지 않도록 한 설정. 이 러너는 GitLab CI 잡이 소스를 직접 가져온다.</li>
+</ul>
+<details>
+<summary>측정 방법</summary>
+<p>두 수치는 대상이 다르다.</p>
+<ul>
+<li><strong>파이프라인 수치</strong>(중앙값 8.5분, 자식 파이프라인 70%): 우리 저장소의 MR 파이프라인만 모아 각 파이프라인의 <code>duration</code>을 썼다.</li>
+<li><strong>러너 빌드 수치</strong>(구간별 시간): 이 러너는 세 저장소가 함께 쓴다. 러너 전체의 빌드를 모아 CodeBuild 빌드의 <code>phases</code> 배열에서 단계별 <code>durationInSeconds</code>를 읽었다.</li>
+</ul>
+<p>러너 빌드는 ref와 sha로 묶으면 재실행된 빌드가 섞여 수치가 틀어지므로 빌드 id 단위로 집계했다.</p>
+</details>
+<h2 id="다음-편">다음 편</h2>
+<p><a href="/notes/slow-ci/02-unused-node-install/">2편</a>은 이 54초가 실제로 무슨 작업이었는지, 그리고 그 작업을 지워도 되는지 어떻게 확인했는지를 다룬다.</p></div><nav class="note-pager" aria-label="이전 글과 다음 글"><a class="note-pager-next" href="/notes/slow-ci/02-unused-node-install/" rel="next"><span>다음 편 &rarr;</span><strong>안 쓰는 Node를 54초씩 설치하고 있었다</strong></a></nav><a class="note-feed-link" href="/notes/">Notes 피드로 가기</a></article></main><footer class="footer small-footer"><div class="footer-bottom"><div class="footer-meta"><span>&copy; 2026 권병준 &middot; NOTES</span></div><a href="#main">BACK TO TOP &uarr;</a></div></footer><dialog class="notes-search" aria-labelledby="notes-search-label" data-search-dialog data-search-base="/notes/"><div class="notes-search-inner"><div class="notes-search-head"><label class="eyebrow" id="notes-search-label" for="notes-search-input">NOTES 검색</label><button type="button" data-search-close>닫기</button></div><input id="notes-search-input" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" data-search-input><p class="notes-search-status" aria-live="polite" data-search-status></p><ul class="notes-search-results" data-search-results></ul></div></dialog><script type="module">
+  // is:inline keeps Vite away from this import: the index only exists after astro build, and a
+  // Vite-processed script that Astro inlines leaves __VITE_PRELOAD__ undefined at runtime.
+  const maxResults = 10;
+
+  const openButton = document.querySelector('[data-search-open]');
+  const dialog = document.querySelector('[data-search-dialog]');
+  // Each public section has its own Pagefind index under its base path.
+  const searchBase = dialog?.dataset.searchBase ?? '/notes/';
+  const pagefindUrl = `${searchBase}pagefind/pagefind.js`;
+
+  if (openButton && dialog) {
+    const input = dialog.querySelector('[data-search-input]');
+    const status = dialog.querySelector('[data-search-status]');
+    const list = dialog.querySelector('[data-search-results]');
+    let pagefindPromise;
+
+    const loadPagefind = () => {
+      pagefindPromise ??= import(pagefindUrl).then(async (pagefind) => {
+        await pagefind.options({ baseUrl: searchBase });
+        return pagefind;
+      });
+      return pagefindPromise;
+    };
+
+    const render = (results) => {
+      list.replaceChildren(
+        ...results.map(({ url, excerpt, meta }) => {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = url;
+          const title = document.createElement('strong');
+          title.textContent = meta.title ?? url;
+          const text = document.createElement('p');
+          // Pagefind escapes the page text and only adds <mark> around matches.
+          text.innerHTML = excerpt;
+          link.append(title, text);
+          item.append(link);
+          return item;
+        }),
+      );
+    };
+
+    const search = async () => {
+      const term = input.value.trim();
+      let pagefind;
+      try {
+        pagefind = await loadPagefind();
+      } catch {
+        pagefindPromise = undefined;
+        status.textContent = '검색 기능을 불러오지 못했습니다.';
+        return;
+      }
+      const response = await pagefind.debouncedSearch(term, {}, 200);
+      // null means a newer keystroke replaced this search.
+      if (response === null) return;
+      if (!term) {
+        status.textContent = '';
+        render([]);
+        return;
+      }
+      const results = await Promise.all(response.results.slice(0, maxResults).map((result) => result.data()));
+      if (input.value.trim() !== term) return;
+      status.textContent = results.length === 0 ? '검색 결과가 없습니다.' : '';
+      render(results);
+    };
+
+    openButton.hidden = false;
+    openButton.addEventListener('click', () => {
+      dialog.showModal();
+      input.focus();
+      input.select();
+      loadPagefind().catch(() => {});
+    });
+    dialog.querySelector('[data-search-close]').addEventListener('click', () => dialog.close());
+    // Clicks on the backdrop land on the dialog itself; the inner wrapper covers the visible box.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => openButton.focus());
+    input.addEventListener('input', search);
+  }
+</script></body></html><script type="module" src="/notes/_astro/Post.astro_astro_type_script_index_0_lang.BHoBpY_F.js"></script>
