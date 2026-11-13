@@ -72,7 +72,7 @@
 <ul>
 <li><strong>러너</strong>: CI 잡을 실제로 실행하는 머신이나 컨테이너.</li>
 <li><strong>on-demand 러너</strong>: 미리 띄워 두지 않고 잡이 들어올 때마다 새로 띄우는 러너. 매번 준비 시간이 든다.</li>
-<li><strong>CodeBuild <code>phases</code></strong>: CodeBuild가 빌드 하나를 QUEUED, PROVISIONING, DOWNLOAD_SOURCE, BUILD 같은 단계로 나눠 각 단계의 시작·종료 시각과 <code>durationInSeconds</code>를 기록한 값.</li>
+<li><strong>CodeBuild <code>phases</code></strong>: CodeBuild가 빌드 하나를 QUEUED, PROVISIONING, DOWNLOAD_SOURCE, BUILD 같은 단계로 나눠 각 단계의 시작 시각, 종료 시각과 <code>durationInSeconds</code>를 기록한 값.</li>
 <li><strong><code>NO_SOURCE</code></strong>: CodeBuild 프로젝트가 소스 저장소를 내려받지 않도록 한 설정. 이 러너는 GitLab CI 잡이 소스를 직접 가져온다.</li>
 </ul>
 <details>
