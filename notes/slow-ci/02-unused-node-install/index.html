@@ -36,7 +36,7 @@
     runtime-versions:
       nodejs: 22
 </code></pre>
-<p>CodeBuild 표준 이미지는 <code>runtime-versions</code> 선언을 보고 해당 버전의 Node를 설치한다. 이 러너에서는 그 설치가 <code>DOWNLOAD_SOURCE</code> 단계 안에서 실행돼, 54초 가운데 약 51초를 차지했다. 나머지 약 3초는 같은 단계의 다른 준비 작업이다. 선언을 지운 뒤 이 단계가 2초로 줄어든 것과도 맞는다.</p>
+<p>CodeBuild 표준 이미지는 <code>runtime-versions</code> 선언을 보고 해당 버전의 Node를 설치한다. 이 러너는 Node를 <code>DOWNLOAD_SOURCE</code> 단계 안에서 설치했고, 54초 가운데 약 51초가 설치에 걸렸다. 나머지 약 3초는 같은 단계의 다른 준비 작업이다. 선언을 지운 뒤 이 단계가 2초로 줄어든 것과도 맞는다.</p>
 <h2 id="그-node를-쓰는-잡이-없었다">그 Node를 쓰는 잡이 없었다</h2>
 <p>이 러너는 GitLab CI 잡을 CodeBuild에서 실행해 주는 호스트이고, 실제 빌드 잡은 그 위에서 필요한 Node를 직접 설치한다.</p>
 <pre class="mermaid-source">flowchart TB
@@ -59,7 +59,7 @@
 </ul>
 <p>세 저장소 모두 자기 Node를 설치하고 이미지 기본값도 24이므로, 선언을 지워도 안전하다고 판단했다.</p>
 <h2 id="제거와-결과">제거와 결과</h2>
-<p>근거를 정리해 인프라 담당에게 buildspec의 <code>runtime-versions: nodejs: 22</code> 제거를 요청했다. 적용 직후 같은 러너의 새 빌드를 측정했다.</p>
+<p>근거를 정리해 인프라 담당에게 buildspec에서 <code>runtime-versions: nodejs: 22</code>를 지워 달라고 요청했다. 선언이 지워진 직후 같은 러너의 새 빌드를 측정했다.</p>
 
 
 
